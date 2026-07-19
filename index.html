@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="ht">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Wing APK Downloader</title>
+<style>
+  :root{
+    --blue-dark:#0d2b52;
+    --blue:#1a4d8f;
+    --blue-mid:#2565b8;
+    --blue-light:#eaf1fb;
+    --gold:#f5a623;
+    --red:#c8102e;
+    --gray:#5b6b7c;
+    --card-bg:#ffffff;
+    --bg:#f4f7fb;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;}
+  body{background:var(--bg);color:var(--blue-dark);padding-bottom:70px;}
+  .app{max-width:480px;margin:0 auto;background:var(--bg);min-height:100vh;position:relative;}
+
+  header{background:linear-gradient(135deg,#0d2b52,#1a4d8f);padding:14px 16px 10px;color:#fff;}
+  .header-top{display:flex;align-items:center;justify-content:space-between;}
+  .brand{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;-webkit-user-select:none;}
+  .brand svg{width:34px;height:34px;flex-shrink:0;}
+  .brand-text{line-height:1.05;}
+  .brand-text .name{font-size:19px;font-weight:800;letter-spacing:.3px;}
+  .brand-text .sub{font-size:9px;opacity:.85;font-weight:500;}
+  .brand-text .made{font-size:8px;opacity:.65;}
+  .header-icons{display:flex;align-items:center;gap:10px;}
+  .icon-btn{position:relative;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;}
+  .lang-btn{background:rgba(255,255,255,.15);border:none;color:#fff;font-size:11px;font-weight:800;border-radius:14px;padding:6px 10px;cursor:pointer;letter-spacing:.5px;}
+  .fb-status{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;color:#fff;opacity:.9;}
+  .fb-dot{width:8px;height:8px;border-radius:50%;background:#9aa9bb;flex-shrink:0;transition:background .2s;}
+  .fb-dot.online{background:#2ecc71;box-shadow:0 0 4px #2ecc71;}
+  .fb-dot.offline{background:#e74c3c;box-shadow:0 0 4px #e74c3c;}
+  .fb-dot.checking{background:#f5a623;}
+  .admin-fb-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#fff;background:rgba(255,255,255,.12);padding:5px 10px;border-radius:12px;margin-left:8px;flex-shrink:0;}
+  .badge-dot{position:absolute;top:-2px;right:-2px;background:var(--red);color:#fff;font-size:9px;border-radius:8px;padding:1px 4px;font-weight:700;}
+  .search-row{margin-top:12px;background:#fff;border-radius:20px;display:flex;align-items:center;padding:8px 14px;gap:8px;}
+  .search-row input{border:none;outline:none;flex:1;font-size:13px;color:var(--blue-dark);}
+  .search-row input::placeholder{color:#9aa9bb;}
+
+  .promo-banner{margin:14px 16px 0;background:linear-gradient(120deg,var(--blue-mid),var(--blue-dark));color:#fff;text-align:center;padding:14px;border-radius:12px;font-weight:700;font-size:14px;letter-spacing:.3px;box-shadow:0 4px 10px rgba(13,43,82,.25);}
+
+  .quick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 16px 0;}
+  .quick-item{background:var(--blue-dark);color:#fff;border-radius:10px;padding:10px 4px;text-align:center;font-size:11px;font-weight:600;cursor:pointer;transition:.15s;}
+  .quick-item:active{transform:scale(.95);}
+  .quick-item .qi-icon{font-size:18px;margin-bottom:4px;}
+  .quick-item .qi-note{display:block;font-size:8px;font-weight:400;opacity:.75;margin-top:2px;}
+
+  .section-title{margin:20px 16px 10px;font-size:16px;font-weight:800;color:var(--blue-dark);}
+
+  .apk-scroll{display:flex;gap:12px;overflow-x:auto;padding:0 16px 6px;scrollbar-width:none;}
+  .apk-scroll::-webkit-scrollbar{display:none;}
+  .apk-card{background:var(--card-bg);border-radius:12px;min-width:140px;max-width:140px;box-shadow:0 2px 8px rgba(13,43,82,.08);overflow:hidden;flex-shrink:0;cursor:pointer;}
+  .apk-icon{height:90px;background:linear-gradient(135deg,#cdd9ea,#a9bcd6);display:flex;align-items:center;justify-content:center;font-size:34px;color:#5b6b7c;}
+  .apk-icon img{width:100%;height:100%;object-fit:cover;}
+  .apk-info{padding:8px;}
+  .apk-name{font-size:12.5px;font-weight:700;color:var(--blue-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .apk-meta{display:flex;justify-content:space-between;align-items:center;margin-top:5px;}
+  .apk-rating{font-size:10.5px;color:#e0a300;font-weight:600;}
+  .apk-price{font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:6px;color:#fff;}
+  .price-free{background:#1f8a4c;}
+  .price-paid{background:var(--blue-dark);}
+
+  .cat-grid{display:flex;gap:8px;flex-wrap:wrap;margin:0 16px;}
+  .cat-chip{background:var(--blue);color:#fff;font-size:12px;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;opacity:.9;}
+  .cat-chip.active{background:var(--gold);color:var(--blue-dark);opacity:1;}
+
+  .announce{margin:18px 16px 0;background:linear-gradient(120deg,var(--blue-mid),var(--blue-dark));border-radius:10px;overflow:hidden;color:#fff;}
+  .announce-head{padding:10px 14px;font-weight:800;font-size:14px;background:rgba(255,255,255,.08);}
+  .announce-body{padding:12px 14px;font-size:12.5px;line-height:1.4;}
+
+  .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#fff;display:flex;justify-content:space-around;padding:8px 0 10px;box-shadow:0 -2px 10px rgba(13,43,82,.1);z-index:40;}
+  .nav-item{text-align:center;font-size:10px;color:var(--gray);cursor:pointer;font-weight:600;}
+  .nav-item.active{color:var(--blue-dark);}
+  .nav-item .ni-icon{font-size:19px;display:block;margin-bottom:2px;}
+
+  .overlay{position:fixed;inset:0;background:rgba(13,43,82,.55);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+  .overlay.show{display:flex;}
+  .modal{background:#fff;border-radius:14px;width:100%;max-width:380px;max-height:88vh;overflow-y:auto;padding:20px;position:relative;}
+  .modal h3{color:var(--blue-dark);font-size:17px;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .modal label{display:block;font-size:12px;font-weight:600;color:var(--gray);margin:10px 0 4px;}
+  .modal input,.modal select,.modal textarea{width:100%;padding:9px 10px;border:1px solid #d5dee9;border-radius:8px;font-size:13px;outline:none;}
+  .modal textarea{resize:vertical;min-height:60px;}
+  .btn{display:block;width:100%;text-align:center;padding:11px;border-radius:8px;font-weight:700;font-size:14px;border:none;cursor:pointer;margin-top:14px;}
+  .btn-primary{background:var(--blue-dark);color:#fff;}
+  .btn-secondary{background:#e7edf5;color:var(--blue-dark);}
+  .btn-danger{background:#c8102e;color:#fff;}
+  .close-x{position:absolute;top:14px;right:16px;font-size:20px;color:var(--gray);cursor:pointer;background:none;border:none;}
+
+  .admin-menu-item{background:var(--blue-light);padding:12px 14px;border-radius:10px;margin-bottom:10px;font-weight:700;color:var(--blue-dark);display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;}
+  .admin-menu-item span.chev{margin-left:auto;opacity:.5;}
+  .apk-admin-row{display:flex;align-items:center;gap:10px;background:#f5f8fc;border-radius:8px;padding:8px;margin-bottom:8px;}
+  .apk-admin-row .thumb{width:38px;height:38px;border-radius:6px;background:#cdd9ea;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;overflow:hidden;}
+  .apk-admin-row .thumb img{width:100%;height:100%;object-fit:cover;}
+  .apk-admin-row .meta{flex:1;min-width:0;}
+  .apk-admin-row .meta .n{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .apk-admin-row .meta .d{font-size:10.5px;color:var(--gray);}
+  .mini-btn{font-size:11px;padding:5px 8px;border-radius:6px;border:none;cursor:pointer;font-weight:700;}
+
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--blue-dark);color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center;}
+  .toast.show{opacity:1;}
+
+  .hold-progress{position:fixed;top:0;left:0;height:3px;background:var(--gold);width:0%;z-index:300;transition:width .05s linear;}
+
+  .pay-opt{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #d5dee9;border-radius:8px;margin-bottom:8px;cursor:pointer;font-weight:600;font-size:13px;}
+  .pay-opt.selected{border-color:var(--blue-dark);background:var(--blue-light);}
+  .pay-dot{width:16px;height:16px;border-radius:50%;background:#fff;color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;}
+  .mc{background:#c8102e;} .nc{background:#1f8a4c;} .pp{background:#003087;}
+
+  .empty-note{font-size:12px;color:var(--gray);text-align:center;padding:20px 0;}
+  .small-note{font-size:10.5px;color:var(--gray);margin-top:6px;line-height:1.4;}
+
+  .admin-fullscreen{position:fixed;inset:0;background:var(--bg);z-index:150;display:none;overflow-y:auto;}
+  .admin-fullscreen.show{display:block;}
+  .admin-topbar{position:sticky;top:0;background:linear-gradient(135deg,#0d2b52,#1a4d8f);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;z-index:5;}
+  .admin-topbar .back-btn{background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0;}
+  .admin-topbar .admin-title{flex:1;font-weight:800;font-size:15px;}
+  .admin-topbar .admin-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0;}
+  .admin-content{padding:16px;max-width:480px;margin:0 auto;}
+  #apkEditOverlay{z-index:170;}
+
+  .dl-row{display:flex;align-items:center;gap:10px;background:#f5f8fc;border-radius:8px;padding:10px;margin-bottom:8px;}
+  .dl-row .thumb{width:40px;height:40px;border-radius:8px;background:#cdd9ea;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden;}
+  .dl-row .thumb img{width:100%;height:100%;object-fit:cover;}
+  .dl-row .meta{flex:1;min-width:0;}
+  .dl-row .meta .n{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dl-row .meta .d{font-size:10.5px;color:var(--gray);}
+
+  .avatar-circle{width:78px;height:78px;border-radius:50%;background:linear-gradient(135deg,#cdd9ea,#a9bcd6);display:flex;align-items:center;justify-content:center;font-size:30px;color:#fff;margin:0 auto 10px;overflow:hidden;font-weight:800;}
+  .avatar-circle img{width:100%;height:100%;object-fit:cover;}
+  .avatar-mini{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+  .toggle-link{text-align:center;font-size:12px;color:var(--blue);font-weight:700;margin-top:12px;cursor:pointer;text-decoration:underline;}
+  .profile-name{text-align:center;font-size:16px;font-weight:800;color:var(--blue-dark);margin-bottom:2px;}
+  .profile-sub{text-align:center;font-size:11px;color:var(--gray);margin-bottom:14px;}
+</style>
+</head>
+<body>
+<div class="hold-progress" id="holdProgress"></div>
+<div class="app">
+
+  <header>
+    <div class="header-top">
+      <div class="brand" id="logoHold">
+        <svg viewBox="0 0 100 100"><defs><linearGradient id="wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4fc3f7"/><stop offset="1" stop-color="#0d2b52"/></linearGradient></defs>
+          <path d="M18 78 L36 22 L50 55 L64 22 L82 78 L66 78 L58 55 L50 78 L42 55 L34 78 Z" fill="url(#wg)"/>
+        </svg>
+        <div class="brand-text">
+          <div class="name">Wing <span style="font-weight:400;font-size:12px;" data-i18n="brandSub"></span></div>
+          <div class="made">Created by WILER_TECH HT</div>
+        </div>
+      </div>
+      <div class="header-icons">
+        <div class="fb-status" id="fbStatusHeader" title="Estati Firebase"><span class="fb-dot checking" id="fbDotHeader"></span><span id="fbTextHeader">...</span></div>
+        <button class="lang-btn" id="langBtn" onclick="toggleLang()">FR</button>
+        <div class="icon-btn" onclick="openMyDownloads()" title="Telechajman Mwen">📥</div>
+        <div class="icon-btn" onclick="openNotif()">🔔<span class="badge-dot" id="notifBadge">1</span></div>
+        <div class="icon-btn" id="headerProfileIcon" onclick="openProfile()">👤</div>
+      </div>
+    </div>
+    <div class="search-row">
+      <span>🔍</span>
+      <input id="searchInput" data-i18n-ph="searchPh" oninput="renderApkList()">
+    </div>
+  </header>
+
+  <div class="promo-banner" id="promoBanner"></div>
+
+  <div class="quick-grid">
+    <div class="quick-item" onclick="setFilter('free')">⬇️<div data-i18n="qFree"></div></div>
+    <div class="quick-item" onclick="setFilter('paid')">🛒<div data-i18n="qPaid"></div></div>
+    <div class="quick-item" onclick="setFilter('all');toast(t('qUpdateToast'))">🔄<div data-i18n="qUpdate"><span class="qi-note" data-i18n="qUpdateNote"></span></div></div>
+    <div class="quick-item" onclick="openPaymentSettings()">💳<div data-i18n="qCard"></div></div>
+  </div>
+
+  <div class="section-title" data-i18n="topApk"></div>
+  <div class="apk-scroll" id="apkScroll"></div>
+
+  <div class="section-title" data-i18n="popCat"></div>
+  <div class="cat-grid" id="catGrid"></div>
+
+  <div class="announce">
+    <div class="announce-head" data-i18n="announceHead"></div>
+    <div class="announce-body" id="announceBody"></div>
+  </div>
+
+  <div class="section-title" data-i18n="allApk"></div>
+  <div id="apkGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 20px;"></div>
+
+  <div class="bottom-nav">
+    <div class="nav-item active"><span class="ni-icon">🏠</span><span data-i18n="navHome"></span></div>
+    <div class="nav-item" onclick="document.querySelector('.section-title').scrollIntoView({behavior:'smooth'})"><span class="ni-icon">📂</span><span data-i18n="navCat"></span></div>
+    <div class="nav-item" onclick="setFilter('all')"><span class="ni-icon">🔄</span><span data-i18n="navUpdate"></span></div>
+    <div class="nav-item" onclick="toast(t('cartEmpty'))"><span class="ni-icon">🛒</span><span data-i18n="navCart"></span></div>
+  </div>
+</div>
+
+<!-- APK DETAIL / DOWNLOAD MODAL -->
+<div class="overlay" id="detailOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('detailOverlay')">✕</button>
+    <h3 id="detailName">Non APK</h3>
+    <div class="small-note" id="detailMeta"></div>
+    <p class="small-note" id="detailDesc" style="margin-top:10px;"></p>
+    <button class="btn btn-primary" id="detailActionBtn">Telechaje</button>
+    <p class="small-note" data-i18n="unknownSourceNote"></p>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="overlay" id="payOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('payOverlay')">✕</button>
+    <h3 data-i18n="choosePayment"></h3>
+    <div class="pay-opt" data-m="MonCash" onclick="selectPay(this)"><span class="pay-dot mc">M</span> MonCash</div>
+    <div class="pay-opt" data-m="NatCash" onclick="selectPay(this)"><span class="pay-dot nc">N</span> NatCash</div>
+    <div class="pay-opt" data-m="AyiPay" onclick="selectPay(this)"><span class="pay-dot" style="background:#0d2b52;">A</span> AyiPay</div>
+    <div class="pay-opt" data-m="PayPal" onclick="selectPay(this)"><span class="pay-dot pp">P</span> <span data-i18n="paypalIntl"></span></div>
+    <div id="payNumberNote" class="small-note" style="background:var(--blue-light);padding:10px;border-radius:8px;display:none;"></div>
+    <button class="btn btn-primary" id="confirmPayBtn" onclick="confirmPay()"></button>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS MODAL -->
+<div class="overlay" id="notifOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('notifOverlay')">✕</button>
+    <h3 id="notifTitle"></h3>
+    <div id="notifList"></div>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="overlay" id="profileOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('profileOverlay')">✕</button>
+    <div id="profileBody"></div>
+  </div>
+</div>
+
+<!-- MY DOWNLOADS MODAL -->
+<div class="overlay" id="myDlOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('myDlOverlay')">✕</button>
+    <h3 id="myDlTitle">📥 Telechajman Mwen</h3>
+    <div id="myDlList"></div>
+  </div>
+</div>
+
+<!-- ADMIN LOGIN MODAL -->
+<div class="overlay" id="adminLoginOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('adminLoginOverlay')">✕</button>
+    <h3 id="adminLoginTitle">🔒 Aksè Admin</h3>
+    <label id="adminLoginLabel">Antre Kòd Sekrè:</label>
+    <input type="password" id="adminPassInput" placeholder="••••••••">
+    <button class="btn btn-primary" onclick="tryAdminLogin()">LOGIN</button>
+    <p class="small-note" id="adminLoginNote"></p>
+  </div>
+</div>
+
+<!-- ADMIN PANEL (FULL SCREEN) -->
+<div class="admin-fullscreen" id="adminPanelView">
+  <div class="admin-topbar">
+    <button class="back-btn" id="adminBackBtn" onclick="adminGoMenu()" style="display:none;">◀</button>
+    <div class="admin-title" id="adminTitle">Panel Administrasyon Wing</div>
+    <div class="admin-fb-status" id="fbStatusAdmin" title="Estati Firebase"><span class="fb-dot checking" id="fbDotAdmin"></span><span id="fbTextAdmin">...</span></div>
+    <button class="admin-close" onclick="closeAdminPanel()">✕</button>
+  </div>
+  <div class="admin-content" id="adminContent"></div>
+</div>
+
+<!-- APK EDIT MODAL -->
+<div class="overlay" id="apkEditOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('apkEditOverlay')">✕</button>
+    <h3 id="apkEditTitle">➕ Ajoute APK</h3>
+    <label id="lbl_name">Non APK</label>
+    <input id="f_name" placeholder="Wing Mizik">
+    <label id="lbl_cat">Kategori</label>
+    <select id="f_cat"><option value="jwet">-</option><option value="edikasyon">-</option><option value="biznis">-</option><option value="mizik">-</option></select>
+    <label id="lbl_desc">Deskripsyon</label>
+    <textarea id="f_desc"></textarea>
+    <label id="lbl_icon">Ikòn APK</label>
+    <input type="file" id="f_icon" accept="image/*">
+    <label id="lbl_apkfile">Fichye APK (.apk)</label>
+    <input type="text" id="f_apk" placeholder="https://github.com/.../releases/download/.../App.apk">
+    <p class="small-note" id="apkLinkNote"></p>
+    <label>Rating (0-5)</label>
+    <input id="f_rating" type="number" step="0.1" min="0" max="5" value="4.5">
+    <label id="lbl_price">Pri</label>
+    <div style="display:flex;gap:8px;">
+      <select id="f_pricetype" style="flex:1;" onchange="togglePriceField()"></select>
+      <input id="f_price" type="number" placeholder="HTG" style="flex:1;" disabled>
+    </div>
+    <button class="btn btn-primary" id="saveApkBtn" onclick="saveApk()">Anrejistre</button>
+    <input type="hidden" id="f_id">
+  </div>
+</div>
+
+<div class="toast" id="toastBox"></div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDs6GSORz5Wl5SvVVDAEYOWUqNPgkKZqZc",
+    authDomain: "wing-8349e.firebaseapp.com",
+    databaseURL: "https://wing-8349e-default-rtdb.firebaseio.com",
+    projectId: "wing-8349e",
+    storageBucket: "wing-8349e.firebasestorage.app",
+    messagingSenderId: "460555741136",
+    appId: "1:460555741136:web:f4e0e41f1af16b29aa7bd5",
+    measurementId: "G-79J0Q6GKYS"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
+</script>
+
+<script>
+/* ================= I18N ================= */
+const I18N = {
+  ht:{
+    brandSub:'APK Downloader',
+    searchPh:'Rechèch APK...',
+    qFree:'Telechajman Gratis', qPaid:'Apk Peye', qUpdate:'Mizajou Disponib', qUpdateNote:'Nouvo Mizajou!', qCard:'Kat Peman',
+    qUpdateToast:'Ap montre tout APK yo',
+    topApk:'Top APK yo!', popCat:'Kategori Popilé', allApk:'Tout APK yo',
+    announceHead:'Anons Aktyèl!',
+    navHome:'Akéy', navCat:'Kategori', navUpdate:'Mizajou', navCart:'Panier',
+    cartEmpty:'Panye ou vid pou kounye a',
+    profileSoon:'Pwofil Mwen — fonksyon sa ap vini',
+    unknownSourceNote:'⚠️ Pou APK a enstale, aktive "Sous Enkoni / Enstale App Enkoni" nan Paramèt aparèy Android ou an lè li mande sa. Sa aplikab pou nenpòt aparèy.',
+    choosePayment:'💳 Chwazi Metòd Peman', paypalIntl:'PayPal (Entènasyonal)', confirmPayBtn:'Konfime Peman',
+    notifTitle:'🔔 Notifikasyon',
+    myDlTitle:'📥 Telechajman Mwen', myDlEmpty:'Ou poko telechaje okenn APK.', myDlAgain:'Telechaje Ankò',
+    adminLoginTitle:'🔒 Aksè Admin - Sekisyon Kache', adminLoginLabel:'Antre Kòd Sekrè:', adminLoginNote:'Aksè sèlman pou ADMINISTRATÈ.',
+    adminMainTitle:'Panel Administrasyon Wing',
+    menuManage:'📦 Jere APK yo', menuPromo:'📢 Mizajou & Pwomosyon', menuPayments:'💵 Konfigirasyon Peman',
+    menuUsers:'👥 Jesyon Itilizatè', menuStats:'📊 Estatistik & Rapò', menuConfig:'⚙️ Konfigirasyon Sekirite',
+    addApk:'➕ Ajoute Nouvo APK', noApk:'Poko gen APK.', edit:'Modifye', del:'Efase',
+    promoBannerLbl:'Tèks Bannyè Pwomosyon', announceTxtLbl:'Tèks Anons Aktyèl', savePromo:'Anrejistre Pwomosyon',
+    payIntro:'Antre nimewo/kont pou chak metòd peman. Kliyan yo ap wè nimewo sa yo lè yo ap achte yon APK peye.',
+    payMoncash:'Nimewo MonCash', payNatcash:'Nimewo NatCash', payAyipay:'Kont AyiPay', payPaypal:'Imèl PayPal',
+    savePayments:'Anrejistre Konfigirasyon Peman',
+    ayipayNote:'ℹ️ AyiPay se app bankè separe ou te kreye a (kat vityèl). Pou kounye a, li parèt tankou yon opsyon peman senp isit la — entegrasyon otomatik (API) ant Wing ak AyiPay ap fèt pita lè w pare.',
+    usersIntro:'Lis vrè itilizatè ki kreye kont sou Wing (chaje an tan reyèl soti nan Firebase).',
+    demoDL:'telechajman',
+    statTotalApk:'Total APK', statTotalApkD:'APK sou platfòm', statTotalDL:'Total Telechajman', statTotalDLd:'telechajman',
+    statRevenue:'Revni Estime',
+    changePassLbl:'Chanje Kòd Sekrè Admin', changePassBtn:'Chanje Kòd',
+    fNameLbl:'Non APK', fCatLbl:'Kategori', fDescLbl:'Deskripsyon', fIconLbl:'Ikòn APK (imaj)', fApkLbl:'Lyen APK (dirèk)',
+    apkLinkNote:'Kole lyen dirèk (GitHub Release oswa Google Drive "uc?export=download"). Wing ap voye moun sou lyen sa a pou telechaje.',
+    fPriceLbl:'Pri', save:'Anrejistre', addApkTitle:'➕ Ajoute APK', editApkTitle:'✏️ Modifye APK',
+    free:'Gratis', paid:'Peye', gratis:'GRATIS',
+    catJwet:'Jwèt', catEdikasyon:'Edikasyon', catBiznis:'Biznis', catMizik:'Mizik',
+    dlStart:'Telechajman ap kòmanse...', dlMissing:'Fichye APK sa a poko mete pa admin. Kontakte WILER_TECH HT.',
+    chooseMethod:'Tanpri chwazi yon metòd peman.', paySimNote:'(Entegre API reyèl pou pwodiksyon)',
+    apkSaved:'APK anrejistre avèk siksè!', apkDeleted:'APK efase.', confirmDelete:'Efase APK sa a?',
+    enterName:'Antre non APK la.', passTooShort:'Kòd la twò kout (min 4 karaktè).', passChanged:'Kòd sekrè chanje avèk siksè!',
+    promoSaved:'Pwomosyon anrejistre!', paySaved:'Konfigirasyon peman anrejistre!',
+    secretUnlocked:'🔓 Aksè Sekrè Aktive!', wrongPass:'Kòd sekrè a pa kòrèk.', welcomeAdmin:'Byenveni nan Panel Administrasyon',
+    notConfigured:'ankò poko konfigire pa admin.', sendMoneyTo:'Voye lajan nan', thenClick:'epi klike "Konfime Peman".',
+    payToPaypal:'Voye peman an nan kont PayPal:', ayipaySend:'Voye lajan nan AyiPay nan:', ayipaySoon:'(Entegrasyon otomatik ak app AyiPay ap vini pita.)',
+    payPaypalNC:'Kont PayPal ankò poko konfigire pa admin.', payGenericNC:'ankò poko konfigire pa admin.',
+    payMethodConfirmed:'Simulation: Peman via', payConfirmedSuffix:'konfime!',
+    noResults:'Pa gen rezilta pou rechèch sa a.', filterFree:'Ap montre APK gratis yo', filterPaid:'Ap montre APK peye yo', filterAll:'Ap montre tout APK yo',
+    cardInfoToast:'Kat Peman: MonCash, NatCash, AyiPay ak PayPal disponib pou achte APK peye yo.',
+    noApkList:'Poko gen APK',
+    profileTitle:'👤 Pwofil Mwen', loginTab:'Konekte', registerTab:'Kreye Pwofil',
+    fLastName:'Non', fFirstName:'Prenon', fPass:'Modpas', fPass2:'Konfime Modpas', fPhoto:'Foto Pwofil (opsyonèl)',
+    btnLogin:'Konekte', btnRegister:'Kreye Pwofil', noAccountYet:'Ou pa gen kont? Kreye youn', haveAccount:'Ou gen kont deja? Konekte',
+    fillAllFields:'Tanpri ranpli tout chan yo.', passMismatch:'Modpas yo pa menm.', passMin4:'Modpas la dwe gen omwen 4 karaktè.',
+    accountExists:'Yon kont ak menm non sa a deja egziste. Eseye konekte.', accountCreated:'Pwofil kreye avèk siksè! Ou konekte kounye a.',
+    loginSuccess:'Ou konekte avèk siksè!', loginFail:'Non oswa modpas pa kòrèk.', logoutBtn:'Dekonekte',
+    myPurchases:'APK Mwen Achte', noPurchases:'Ou poko achte okenn APK peye.',
+    alreadyOwned:'Ou gentan achte APK sa a — telechajman gratis!', purchaseSavedNote:'Achte anrejistre sou kont ou — w ap ka telechaje l gratis pita.',
+    guestPurchaseNote:'💡 Kreye yon pwofil pou w pa peye ankò lè w vle telechaje APK sa a yon lòt fwa.',
+  },
+  fr:{
+    brandSub:'Téléchargeur APK',
+    searchPh:'Recherche APK...',
+    qFree:'Téléchargements Gratuits', qPaid:'APK Payants', qUpdate:'Mises à jour', qUpdateNote:'Nouvelle MàJ !', qCard:'Moyens de Paiement',
+    qUpdateToast:'Affichage de tous les APK',
+    topApk:'Top APK !', popCat:'Catégories Populaires', allApk:'Tous les APK',
+    announceHead:'Annonce Actuelle !',
+    navHome:'Accueil', navCat:'Catégories', navUpdate:'Mises à jour', navCart:'Panier',
+    cartEmpty:'Votre panier est vide pour le moment',
+    profileSoon:'Mon Profil — fonctionnalité à venir',
+    unknownSourceNote:'⚠️ Pour installer l\'APK, activez "Sources Inconnues / Installer des Apps Inconnues" dans les Paramètres Android quand cela vous est demandé. Applicable sur n\'importe quel appareil.',
+    choosePayment:'💳 Choisir un Moyen de Paiement', paypalIntl:'PayPal (International)', confirmPayBtn:'Confirmer le Paiement',
+    notifTitle:'🔔 Notifications',
+    myDlTitle:'📥 Mes Téléchargements', myDlEmpty:'Vous n\'avez encore téléchargé aucun APK.', myDlAgain:'Télécharger à nouveau',
+    adminLoginTitle:'🔒 Accès Admin - Section Cachée', adminLoginLabel:'Entrer le Code Secret :', adminLoginNote:'Accès réservé à l\'ADMINISTRATEUR.',
+    adminMainTitle:'Panneau Administration Wing',
+    menuManage:'📦 Gérer les APK', menuPromo:'📢 Mises à jour & Promotion', menuPayments:'💵 Configuration Paiement',
+    menuUsers:'👥 Gestion Utilisateurs', menuStats:'📊 Statistiques & Rapport', menuConfig:'⚙️ Configuration Sécurité',
+    addApk:'➕ Ajouter un Nouvel APK', noApk:'Aucun APK pour l\'instant.', edit:'Modifier', del:'Supprimer',
+    promoBannerLbl:'Texte de la Bannière Promo', announceTxtLbl:'Texte de l\'Annonce Actuelle', savePromo:'Enregistrer la Promotion',
+    payIntro:'Entrez le numéro/compte pour chaque moyen de paiement. Les clients verront ces numéros lors de l\'achat d\'un APK payant.',
+    payMoncash:'Numéro MonCash', payNatcash:'Numéro NatCash', payAyipay:'Compte AyiPay', payPaypal:'Email PayPal',
+    savePayments:'Enregistrer la Configuration de Paiement',
+    ayipayNote:'ℹ️ AyiPay est l\'application bancaire séparée que vous avez créée (carte virtuelle). Pour l\'instant, elle apparaît comme une simple option de paiement ici — l\'intégration automatique (API) entre Wing et AyiPay se fera plus tard.',
+    usersIntro:'Liste des vrais utilisateurs ayant créé un compte sur Wing (chargée en temps réel depuis Firebase).',
+    demoDL:'téléchargements',
+    statTotalApk:'Total APK', statTotalApkD:'APK sur la plateforme', statTotalDL:'Total Téléchargements', statTotalDLd:'téléchargements',
+    statRevenue:'Revenu Estimé',
+    changePassLbl:'Changer le Code Secret Admin', changePassBtn:'Changer le Code',
+    fNameLbl:'Nom de l\'APK', fCatLbl:'Catégorie', fDescLbl:'Description', fIconLbl:'Icône APK (image)', fApkLbl:'Lien APK (direct)',
+    apkLinkNote:'Collez le lien direct (GitHub Release ou Google Drive "uc?export=download"). Wing enverra l\'utilisateur vers ce lien pour télécharger.',
+    fPriceLbl:'Prix', save:'Enregistrer', addApkTitle:'➕ Ajouter un APK', editApkTitle:'✏️ Modifier l\'APK',
+    free:'Gratuit', paid:'Payant', gratis:'GRATUIT',
+    catJwet:'Jeux', catEdikasyon:'Éducation', catBiznis:'Affaires', catMizik:'Musique',
+    dlStart:'Le téléchargement commence...', dlMissing:'Ce fichier APK n\'a pas encore été ajouté par l\'admin. Contactez WILER_TECH HT.',
+    chooseMethod:'Veuillez choisir un moyen de paiement.', paySimNote:'(Intégrer l\'API réelle pour la production)',
+    apkSaved:'APK enregistré avec succès !', apkDeleted:'APK supprimé.', confirmDelete:'Supprimer cet APK ?',
+    enterName:'Entrez le nom de l\'APK.', passTooShort:'Le code est trop court (min 4 caractères).', passChanged:'Code secret changé avec succès !',
+    promoSaved:'Promotion enregistrée !', paySaved:'Configuration de paiement enregistrée !',
+    secretUnlocked:'🔓 Accès Secret Activé !', wrongPass:'Le code secret est incorrect.', welcomeAdmin:'Bienvenue dans le Panneau Administration',
+    notConfigured:'n\'est pas encore configuré par l\'admin.', sendMoneyTo:'Envoyez l\'argent au', thenClick:'puis cliquez "Confirmer le Paiement".',
+    payToPaypal:'Envoyez le paiement au compte PayPal :', ayipaySend:'Envoyez l\'argent sur AyiPay au :', ayipaySoon:'(L\'intégration automatique avec l\'app AyiPay arrivera plus tard.)',
+    payPaypalNC:'Le compte PayPal n\'est pas encore configuré par l\'admin.', payGenericNC:'n\'est pas encore configuré par l\'admin.',
+    payMethodConfirmed:'Simulation : Paiement via', payConfirmedSuffix:'confirmé !',
+    noResults:'Aucun résultat pour cette recherche.', filterFree:'Affichage des APK gratuits', filterPaid:'Affichage des APK payants', filterAll:'Affichage de tous les APK',
+    cardInfoToast:'Moyens de paiement : MonCash, NatCash, AyiPay et PayPal disponibles pour acheter des APK payants.',
+    noApkList:'Aucun APK disponible',
+    profileTitle:'👤 Mon Profil', loginTab:'Se connecter', registerTab:'Créer un Profil',
+    fLastName:'Nom', fFirstName:'Prénom', fPass:'Mot de passe', fPass2:'Confirmer le Mot de passe', fPhoto:'Photo de Profil (optionnel)',
+    btnLogin:'Se connecter', btnRegister:'Créer le Profil', noAccountYet:'Pas de compte ? Créez-en un', haveAccount:'Vous avez déjà un compte ? Connectez-vous',
+    fillAllFields:'Veuillez remplir tous les champs.', passMismatch:'Les mots de passe ne correspondent pas.', passMin4:'Le mot de passe doit contenir au moins 4 caractères.',
+    accountExists:'Un compte avec ce nom existe déjà. Essayez de vous connecter.', accountCreated:'Profil créé avec succès ! Vous êtes maintenant connecté.',
+    loginSuccess:'Connexion réussie !', loginFail:'Nom ou mot de passe incorrect.', logoutBtn:'Déconnexion',
+    myPurchases:'Mes APK Achetés', noPurchases:'Vous n\'avez encore acheté aucun APK payant.',
+    alreadyOwned:'Vous possédez déjà cet APK — téléchargement gratuit !', purchaseSavedNote:'Achat enregistré sur votre compte — vous pourrez le retélécharger gratuitement.',
+    guestPurchaseNote:'💡 Créez un profil pour ne plus payer la prochaine fois que vous téléchargez cet APK.',
+  }
+};
+let LANG = localStorage.getItem('wing_lang') || 'ht';
+function t(key){ return (I18N[LANG] && I18N[LANG][key]) || (I18N.ht[key]) || key; }
+function toggleLang(){ LANG = (LANG==='ht') ? 'fr' : 'ht'; localStorage.setItem('wing_lang', LANG); applyLang(); renderAll(); if(document.getElementById('profileOverlay').classList.contains('show')) renderProfileOverlay(); }
+function applyLang(){
+  document.getElementById('langBtn').textContent = (LANG==='ht') ? 'FR' : 'HT';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    // only set text of the node's first text-level content, preserve nested elements like qi-note span
+    if(el.children.length){
+      // set text for direct text nodes only (first child text)
+      for(const node of el.childNodes){ if(node.nodeType===3){ node.textContent = t(key); break; } }
+      if(![...el.childNodes].some(n=>n.nodeType===3)) el.insertBefore(document.createTextNode(t(key)), el.firstChild);
+    } else {
+      el.textContent = t(key);
+    }
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=> el.placeholder = t(el.getAttribute('data-i18n-ph')));
+  document.getElementById('confirmPayBtn').textContent = t('confirmPayBtn');
+  document.getElementById('notifTitle').textContent = t('notifTitle');
+  document.getElementById('myDlTitle').textContent = t('myDlTitle');
+  document.getElementById('adminLoginTitle').textContent = t('adminLoginTitle');
+  document.getElementById('adminLoginLabel').textContent = t('adminLoginLabel');
+  document.getElementById('adminLoginNote').textContent = t('adminLoginNote');
+  document.getElementById('lbl_name').textContent = t('fNameLbl');
+  document.getElementById('lbl_cat').textContent = t('fCatLbl');
+  document.getElementById('lbl_desc').textContent = t('fDescLbl');
+  document.getElementById('lbl_icon').textContent = t('fIconLbl');
+  document.getElementById('lbl_apkfile').textContent = t('fApkLbl');
+  document.getElementById('apkLinkNote').textContent = t('apkLinkNote');
+  document.getElementById('lbl_price').textContent = t('fPriceLbl');
+  document.getElementById('saveApkBtn').textContent = t('save');
+  const catSel = document.getElementById('f_cat');
+  [...catSel.options].forEach(o=>{ o.textContent = t('cat'+o.value.charAt(0).toUpperCase()+o.value.slice(1)); });
+  const priceSel = document.getElementById('f_pricetype');
+  priceSel.innerHTML = `<option value="free">${t('free')}</option><option value="paid">${t('paid')}</option>`;
+}
+
+/* ================= FIRESTORE DATA LAYER ================= */
+const CAT_KEYS = ['jwet','edikasyon','biznis','mizik'];
+function catLabel(key){ return t('cat'+key.charAt(0).toUpperCase()+key.slice(1)); }
+
+const ADMIN_EMAIL = 'admin@wing-app.internal';
+const DEFAULT_SETTINGS = {promoText:'Anons Mizajou & Pwomosyon / Mises à jour & Promotions', announceText:'Nouvo Mizajou Disponib! Telechaje dènye vèsyon kounye a!', pay:{moncash:'',natcash:'',ayipay:'',paypal:''}};
+const DEFAULT_APKS = [
+  {name:'Wing Play',cat:'jwet',desc:'',rating:4.5,price:0,icon:'',apkData:'',downloads:32},
+  {name:'Wing Kids Edu',cat:'edikasyon',desc:'',rating:4.0,price:500,icon:'',apkData:'',downloads:15},
+  {name:'Wing Biznis Pro',cat:'biznis',desc:'',rating:4.1,price:1200,icon:'',apkData:'',downloads:8},
+];
+
+let apks = [];
+let settings = Object.assign({}, DEFAULT_SETTINGS);
+let currentFilter = 'all';
+let currentCat = null;
+let currentDetailId = null;
+let currentUserProfile = null;
+let seededApks = false;
+
+function resizeImageToDataURL(file, maxDim, quality, cb){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      let w=img.width, h=img.height;
+      if(w>h){ if(w>maxDim){ h=Math.round(h*maxDim/w); w=maxDim; } } else { if(h>maxDim){ w=Math.round(w*maxDim/h); h=maxDim; } }
+      const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      cb(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ================= FIREBASE CONNECTION STATUS ================= */
+function setFbStatus(state){
+  // state: 'checking' | 'online' | 'offline'
+  const labels = {checking:(LANG==='fr'?'Vérification...':'Verifikasyon...'), online:(LANG==='fr'?'Connecté':'Konekte'), offline:(LANG==='fr'?'Déconnecté':'Dekonekte')};
+  [['fbDotHeader','fbTextHeader'],['fbDotAdmin','fbTextAdmin']].forEach(([dotId,txtId])=>{
+    const dot = document.getElementById(dotId), txt = document.getElementById(txtId);
+    if(dot){ dot.classList.remove('checking','online','offline'); dot.classList.add(state); }
+    if(txt){ txt.textContent = labels[state]; }
+  });
+}
+window.addEventListener('offline', ()=> setFbStatus('offline'));
+window.addEventListener('online', ()=> setFbStatus('checking'));
+
+/* Real-time APK catalog */
+db.collection('apks').onSnapshot(async function(snap){
+  setFbStatus(snap.metadata.fromCache ? 'offline' : 'online');
+  if(snap.empty && !seededApks){
+    seededApks = true;
+    const batch = db.batch();
+    DEFAULT_APKS.forEach(a=>{ const ref=db.collection('apks').doc(); batch.set(ref,a); });
+    await batch.commit();
+    return;
+  }
+  apks = snap.docs.map(d=>Object.assign({id:d.id}, d.data()));
+  renderAll();
+  refreshAdminIfManage();
+}, function(err){ setFbStatus('offline'); toast('Firestore (apks): '+err.message); });
+
+/* Real-time settings (promo text, payment numbers, admin secret code) */
+db.collection('settings').doc('global').onSnapshot(async function(docSnap){
+  setFbStatus(docSnap.metadata.fromCache ? 'offline' : 'online');
+  if(!docSnap.exists){ await db.collection('settings').doc('global').set(DEFAULT_SETTINGS); return; }
+  const data = docSnap.data();
+  settings = Object.assign({}, DEFAULT_SETTINGS, data, {pay:Object.assign({moncash:'',natcash:'',ayipay:'',paypal:''}, data.pay||{})});
+  renderAll();
+}, function(err){ setFbStatus('offline'); toast('Firestore (settings): '+err.message); });
+
+function refreshAdminIfManage(){
+  const titleEl = document.getElementById('adminTitle');
+  if(titleEl && document.getElementById('adminPanelView').classList.contains('show') && titleEl.textContent===t('menuManage')) showAdminSection('manage');
+}
+
+/* ================= AUTH (Firebase Authentication) ================= */
+function slugify(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,''); }
+function deriveEmail(first,last){ return slugify(first)+'.'+slugify(last)+'@wing-users.app'; }
+
+auth.onAuthStateChanged(function(user){
+  if(user){
+    db.collection('users').doc(user.uid).get().then(function(docSnap){
+      currentUserProfile = docSnap.exists ? Object.assign({uid:user.uid}, docSnap.data()) : {uid:user.uid, firstName:'', lastName:'', photo:'', purchases:[], downloads:[]};
+      updateHeaderProfileIcon();
+      if(document.getElementById('profileOverlay').classList.contains('show')){ profileMode='view'; renderProfileOverlay(); }
+    });
+  } else {
+    currentUserProfile = null;
+    updateHeaderProfileIcon();
+  }
+});
+function getCurrentUser(){ return currentUserProfile; }
+function updateHeaderProfileIcon(){
+  const icon = document.getElementById('headerProfileIcon');
+  const u = getCurrentUser();
+  if(u && u.photo){ icon.innerHTML = `<img class="avatar-mini" src="${u.photo}">`; }
+  else if(u){ icon.textContent = (u.firstName||'?').charAt(0).toUpperCase(); }
+  else { icon.innerHTML = '👤'; }
+}
+
+let profileMode = 'login';
+function openProfile(){
+  profileMode = currentUserProfile ? 'view' : 'login';
+  renderProfileOverlay();
+  openModal('profileOverlay');
+}
+function switchProfileMode(m){ profileMode=m; renderProfileOverlay(); }
+function renderProfileOverlay(){
+  const body = document.getElementById('profileBody');
+  const u = currentUserProfile;
+  if(profileMode==='view' && u){
+    const purchased = apks.filter(a=> (u.purchases||[]).includes(a.id));
+    body.innerHTML = `
+      <div class="avatar-circle">${u.photo?`<img src="${u.photo}">`:(u.firstName||'?').charAt(0).toUpperCase()}</div>
+      <div class="profile-name">${u.firstName} ${u.lastName}</div>
+      <div class="profile-sub">${LANG==='fr'?'Membre Wing':'Manm Wing'}</div>
+      <label>${t('myPurchases')}</label>
+      <div>${purchased.length ? purchased.map(a=>`
+        <div class="apk-admin-row">
+          <div class="thumb">${a.icon?`<img src="${a.icon}">`:'📱'}</div>
+          <div class="meta"><div class="n">${a.name}</div><div class="d">${a.price} HTG</div></div>
+        </div>`).join('') : `<p class="empty-note">${t('noPurchases')}</p>`}</div>
+      <button class="btn btn-danger" onclick="logoutUser()">${t('logoutBtn')}</button>`;
+  } else if(profileMode==='register'){
+    body.innerHTML = `<h3>${t('registerTab')}</h3>
+      <label>${t('fLastName')}</label><input id="rp_last">
+      <label>${t('fFirstName')}</label><input id="rp_first">
+      <label>${t('fPass')}</label><input id="rp_pass" type="password">
+      <label>${t('fPass2')}</label><input id="rp_pass2" type="password">
+      <label>${t('fPhoto')}</label><input id="rp_photo" type="file" accept="image/*">
+      <button class="btn btn-primary" onclick="submitRegister()">${t('btnRegister')}</button>
+      <div class="toggle-link" onclick="switchProfileMode('login')">${t('haveAccount')}</div>`;
+  } else {
+    body.innerHTML = `<h3>${t('loginTab')}</h3>
+      <label>${t('fLastName')}</label><input id="lp_last">
+      <label>${t('fFirstName')}</label><input id="lp_first">
+      <label>${t('fPass')}</label><input id="lp_pass" type="password">
+      <button class="btn btn-primary" onclick="submitLogin()">${t('btnLogin')}</button>
+      <div class="toggle-link" onclick="switchProfileMode('register')">${t('noAccountYet')}</div>`;
+  }
+}
+function submitRegister(){
+  const last = document.getElementById('rp_last').value.trim();
+  const first = document.getElementById('rp_first').value.trim();
+  const pass = document.getElementById('rp_pass').value;
+  const pass2 = document.getElementById('rp_pass2').value;
+  const photoFile = document.getElementById('rp_photo').files[0];
+  if(!last || !first || !pass || !pass2){ toast(t('fillAllFields')); return; }
+  if(pass !== pass2){ toast(t('passMismatch')); return; }
+  if(pass.length<4){ toast(t('passMin4')); return; }
+  const email = deriveEmail(first,last);
+  function finish(photoData){
+    auth.createUserWithEmailAndPassword(email, pass).then(function(cred){
+      return db.collection('users').doc(cred.user.uid).set({firstName:first,lastName:last,photo:photoData||'',purchases:[],downloads:[]});
+    }).then(function(){
+      toast(t('accountCreated'));
+    }).catch(function(err){
+      if(err.code==='auth/email-already-in-use'){ toast(t('accountExists')); switchProfileMode('login'); }
+      else if(err.code==='auth/weak-password'){ toast(t('passMin4')); }
+      else { toast(err.message); }
+    });
+  }
+  if(photoFile) resizeImageToDataURL(photoFile, 200, 0.7, finish); else finish('');
+}
+function submitLogin(){
+  const last = document.getElementById('lp_last').value.trim();
+  const first = document.getElementById('lp_first').value.trim();
+  const pass = document.getElementById('lp_pass').value;
+  if(!last || !first || !pass){ toast(t('fillAllFields')); return; }
+  const email = deriveEmail(first,last);
+  auth.signInWithEmailAndPassword(email, pass).then(function(){
+    toast(t('loginSuccess'));
+  }).catch(function(){ toast(t('loginFail')); });
+}
+function logoutUser(){ auth.signOut(); profileMode='login'; renderProfileOverlay(); }
+
+/* ================= RENDER ================= */
+function fmtPrice(p){ return p>0 ? p+' HTG' : t('gratis'); }
+
+function matchesFilter(a){
+  if(currentFilter==='free' && a.price>0) return false;
+  if(currentFilter==='paid' && a.price<=0) return false;
+  if(currentCat && a.cat!==currentCat) return false;
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  if(q && !a.name.toLowerCase().includes(q)) return false;
+  return true;
+}
+
+function apkCardHTML(a){
+  const iconHTML = a.icon ? `<img src="${a.icon}">` : '📱';
+  return `<div class="apk-card" onclick="openDetail('${a.id}')">
+    <div class="apk-icon">${iconHTML}</div>
+    <div class="apk-info">
+      <div class="apk-name">${a.name}</div>
+      <div class="apk-meta">
+        <span class="apk-rating">⭐ ${a.rating}</span>
+        <span class="apk-price ${a.price>0?'price-paid':'price-free'}">${fmtPrice(a.price)}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderTop(){
+  const top = apks.slice().sort((x,y)=>y.downloads-x.downloads).slice(0,6);
+  document.getElementById('apkScroll').innerHTML = top.map(a=>apkCardHTML(a)).join('') || `<p class="empty-note">${t('noApkList')}</p>`;
+}
+function renderApkList(){
+  const grid = document.getElementById('apkGrid');
+  const list = apks.filter(matchesFilter);
+  grid.innerHTML = list.length ? list.map(a=>apkCardHTML(a)).join('') : `<p class="empty-note" style="grid-column:1/-1;">${t('noResults')}</p>`;
+}
+function renderCats(){
+  document.getElementById('catGrid').innerHTML = CAT_KEYS.map(c=>`<div class="cat-chip ${currentCat===c?'active':''}" onclick="toggleCat('${c}')">${catLabel(c)}</div>`).join('');
+}
+function toggleCat(c){ currentCat = (currentCat===c) ? null : c; renderCats(); renderApkList(); }
+function setFilter(f){
+  currentFilter=f; currentCat=null; renderCats(); renderApkList();
+  toast(f==='free'?t('filterFree'):(f==='paid'?t('filterPaid'):t('filterAll')));
+  document.getElementById('apkGrid').scrollIntoView({behavior:'smooth'});
+}
+function renderAll(){
+  document.getElementById('promoBanner').textContent = settings.promoText;
+  document.getElementById('announceBody').textContent = settings.announceText;
+  renderTop(); renderCats(); renderApkList();
+}
+
+/* ================= MODALS / TOAST ================= */
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+function openModal(id){ document.getElementById(id).classList.add('show'); }
+function toast(msg){
+  const el = document.getElementById('toastBox');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>el.classList.remove('show'), 2600);
+}
+function openNotif(){
+  document.getElementById('notifList').innerHTML = `
+    <div class="small-note" style="margin-bottom:10px;font-size:12.5px;">🆕 ${settings.announceText}</div>
+    <div class="small-note" style="font-size:12.5px;">📦 ${apks.length} — Wing</div>`;
+  document.getElementById('notifBadge').style.display='none';
+  openModal('notifOverlay');
+}
+
+/* MY DOWNLOADS */
+function loadGuestDownloads(){ const s = localStorage.getItem('wing_my_downloads'); return s ? JSON.parse(s) : []; }
+function saveGuestDownloads(list){ localStorage.setItem('wing_my_downloads', JSON.stringify(list)); }
+function recordDownload(a){
+  const entry = {id:a.id, name:a.name, icon:a.icon||'', price:a.price, date:new Date().toISOString()};
+  const u = getCurrentUser();
+  if(u){
+    let list = (u.downloads||[]).slice();
+    list.unshift(entry); if(list.length>50) list = list.slice(0,50);
+    u.downloads = list;
+    db.collection('users').doc(u.uid).update({downloads:list}).catch(function(err){ toast('Firestore: '+err.message); });
+  } else {
+    let list = loadGuestDownloads();
+    list.unshift(entry); if(list.length>50) list = list.slice(0,50);
+    saveGuestDownloads(list);
+  }
+}
+function openMyDownloads(){
+  const u = getCurrentUser();
+  const list = u ? (u.downloads||[]) : loadGuestDownloads();
+  const body = document.getElementById('myDlList');
+  if(!list.length){ body.innerHTML = `<p class="empty-note">${t('myDlEmpty')}</p>`; openModal('myDlOverlay'); return; }
+  body.innerHTML = list.map(d=>{
+    const dt = new Date(d.date);
+    const dstr = dt.toLocaleDateString(LANG==='fr'?'fr-FR':'fr-HT', {day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + dt.toLocaleTimeString(LANG==='fr'?'fr-FR':'fr-HT',{hour:'2-digit',minute:'2-digit'});
+    const iconHTML = d.icon ? `<img src="${d.icon}">` : '📱';
+    return `<div class="dl-row">
+      <div class="thumb">${iconHTML}</div>
+      <div class="meta"><div class="n">${d.name}</div><div class="d">${dstr} • ${fmtPrice(d.price)}</div></div>
+      <button class="mini-btn" style="background:var(--blue-light);color:var(--blue-dark);" onclick="doDownload('${d.id}')">${t('myDlAgain')}</button>
+    </div>`;
+  }).join('');
+  openModal('myDlOverlay');
+}
+
+function ownsApk(id){ const u=getCurrentUser(); return !!(u && (u.purchases||[]).includes(id)); }
+function openDetail(id){
+  const a = apks.find(x=>x.id===id); if(!a) return;
+  currentDetailId = id;
+  document.getElementById('detailName').textContent = a.name;
+  document.getElementById('detailMeta').textContent = `${catLabel(a.cat)} • ⭐ ${a.rating} • ${fmtPrice(a.price)} • ${a.downloads} ${LANG==='fr'?'téléchargements':'telechajman'}`;
+  document.getElementById('detailDesc').textContent = a.desc || '';
+  const btn = document.getElementById('detailActionBtn');
+  const owned = a.price>0 && ownsApk(id);
+  if(owned){
+    document.getElementById('detailDesc').textContent = (a.desc?a.desc+' ':'') + t('alreadyOwned');
+    btn.textContent = LANG==='fr'?'Télécharger Maintenant':'Telechaje Kounye a';
+    btn.onclick = ()=> doDownload(id);
+  } else {
+    btn.textContent = a.price>0 ? `${LANG==='fr'?'Acheter et Télécharger':'Achte & Telechaje'} (${a.price} HTG)` : (LANG==='fr'?'Télécharger Maintenant':'Telechaje Kounye a');
+    btn.onclick = ()=> a.price>0 ? openPayment(id) : doDownload(id);
+  }
+  openModal('detailOverlay');
+}
+
+function isNativeApp(){
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+async function doDownloadNative(a){
+  try{
+    toast(t('dlStart'));
+    const fileName = a.name.replace(/\s+/g,'_') + '_' + Date.now() + '.apk';
+    const { Filesystem, Directory } = window.Capacitor.Plugins;
+    const { FileTransfer } = window.Capacitor.Plugins;
+    const { FileOpener } = window.Capacitor.Plugins;
+    const fileInfo = await Filesystem.getUri({ directory: Directory.Cache, path: fileName });
+    await FileTransfer.downloadFile({ url: a.apkData, path: fileInfo.uri, progress: false });
+    await FileOpener.openFile({ path: fileInfo.uri, mimeType: 'application/vnd.android.package-archive' });
+  }catch(err){
+    toast((LANG==='fr'?'Erreur de téléchargement: ':'Erè telechajman: ')+(err && err.message ? err.message : err));
+  }
+}
+function doDownload(id){
+  const a = apks.find(x=>x.id===id); if(!a) return;
+  db.collection('apks').doc(id).update({downloads: (a.downloads||0)+1}).catch(function(err){ toast('Firestore: '+err.message); });
+  recordDownload(a);
+  if(isNativeApp() && a.apkData && !a.apkData.startsWith('data:')){
+    /* running inside the packaged Android app: download to device storage and open the system installer directly, without leaving Wing */
+    doDownloadNative(a);
+  } else if(a.apkData && a.apkData.startsWith('data:')){
+    /* legacy: old base64-stored file (from before external links) */
+    const link=document.createElement('a');
+    link.href=a.apkData; link.download=(a.name.replace(/\s+/g,'_')+'.apk');
+    document.body.appendChild(link); link.click(); link.remove();
+    toast(t('dlStart'));
+  } else if(a.apkData){
+    /* website / no native plugins available: external direct link (GitHub Release, Google Drive, etc.) */
+    const link=document.createElement('a');
+    link.href=a.apkData; link.target='_blank'; link.rel='noopener';
+    document.body.appendChild(link); link.click(); link.remove();
+    toast(t('dlStart'));
+  } else {
+    toast(t('dlMissing'));
+  }
+  closeModal('detailOverlay');
+}
+
+let pendingPayId=null, selectedPayMethod=null;
+function openPayment(id){
+  pendingPayId=id; selectedPayMethod=null;
+  document.querySelectorAll('.pay-opt').forEach(e=>e.classList.remove('selected'));
+  document.getElementById('payNumberNote').style.display='none';
+  closeModal('detailOverlay'); openModal('payOverlay');
+}
+function openPaymentSettings(){ toast(t('cardInfoToast')); }
+function selectPay(el){
+  document.querySelectorAll('.pay-opt').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected'); selectedPayMethod=el.dataset.m;
+  const note = document.getElementById('payNumberNote');
+  note.style.display='block';
+  if(selectedPayMethod==='PayPal'){
+    note.textContent = settings.pay.paypal ? `${t('payToPaypal')} ${settings.pay.paypal}` : t('payPaypalNC');
+  } else if(selectedPayMethod==='AyiPay'){
+    note.textContent = settings.pay.ayipay ? `${t('ayipaySend')} ${settings.pay.ayipay}. ${t('ayipaySoon')}` : `AyiPay ${t('payGenericNC')} ${t('ayipaySoon')}`;
+  } else {
+    const key = selectedPayMethod.toLowerCase();
+    const num = settings.pay[key];
+    note.textContent = num ? `${t('sendMoneyTo')} ${selectedPayMethod} ${LANG==='fr'?'au numéro':'nan nimewo'}: ${num}, ${t('thenClick')}` : `${selectedPayMethod} ${t('payGenericNC')}`;
+  }
+}
+function confirmPay(){
+  if(!selectedPayMethod){ toast(t('chooseMethod')); return; }
+  const u = getCurrentUser();
+  if(u && pendingPayId && !(u.purchases||[]).includes(pendingPayId)){
+    const newPurchases = (u.purchases||[]).concat([pendingPayId]);
+    u.purchases = newPurchases;
+    db.collection('users').doc(u.uid).update({purchases:newPurchases}).catch(function(err){ toast('Firestore: '+err.message); });
+    toast(`${t('payMethodConfirmed')} ${selectedPayMethod} ${t('payConfirmedSuffix')} ${t('purchaseSavedNote')}`);
+  } else if(!u){
+    toast(`${t('payMethodConfirmed')} ${selectedPayMethod} ${t('payConfirmedSuffix')} ${t('guestPurchaseNote')}`);
+  } else {
+    toast(`${t('payMethodConfirmed')} ${selectedPayMethod} ${t('payConfirmedSuffix')}`);
+  }
+  closeModal('payOverlay');
+  if(pendingPayId) doDownload(pendingPayId);
+}
+
+/* ================= HIDDEN ADMIN ACCESS ================= */
+const HOLD_MS = 15000;
+let holdTimer=null, holdInterval=null, holdStart=0;
+const logoEl = document.getElementById('logoHold');
+const progressEl = document.getElementById('holdProgress');
+function startHold(){
+  holdStart = Date.now(); progressEl.style.width='0%';
+  holdInterval = setInterval(()=>{ const elapsed = Date.now()-holdStart; progressEl.style.width = Math.min(100,(elapsed/HOLD_MS)*100)+'%'; },50);
+  holdTimer = setTimeout(()=>{ clearInterval(holdInterval); progressEl.style.width='0%'; toast(t('secretUnlocked')); openModal('adminLoginOverlay'); }, HOLD_MS);
+}
+function cancelHold(){ clearTimeout(holdTimer); clearInterval(holdInterval); progressEl.style.width='0%'; }
+logoEl.addEventListener('mousedown', startHold);
+logoEl.addEventListener('touchstart', startHold, {passive:true});
+['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>logoEl.addEventListener(ev, cancelHold));
+
+function tryAdminLogin(){
+  const val = document.getElementById('adminPassInput').value;
+  if(!val){ toast(t('wrongPass')); return; }
+  auth.signInWithEmailAndPassword(ADMIN_EMAIL, val).then(function(){
+    document.getElementById('adminPassInput').value='';
+    closeModal('adminLoginOverlay');
+    openAdminPanel();
+    toast(t('welcomeAdmin'));
+  }).catch(function(){ toast(t('wrongPass')); });
+}
+function openAdminPanel(){ document.getElementById('adminPanelView').classList.add('show'); adminGoMenu(); }
+function closeAdminPanel(){ document.getElementById('adminPanelView').classList.remove('show'); }
+function adminGoMenu(){
+  document.getElementById('adminBackBtn').style.display='none';
+  document.getElementById('adminTitle').textContent = t('adminMainTitle');
+  document.getElementById('adminContent').innerHTML = `
+    <div class="admin-menu-item" onclick="showAdminSection('manage')">${t('menuManage')} <span class="chev">›</span></div>
+    <div class="admin-menu-item" onclick="showAdminSection('promo')">${t('menuPromo')} <span class="chev">›</span></div>
+    <div class="admin-menu-item" onclick="showAdminSection('payments')">${t('menuPayments')} <span class="chev">›</span></div>
+    <div class="admin-menu-item" onclick="showAdminSection('users')">${t('menuUsers')} <span class="chev">›</span></div>
+    <div class="admin-menu-item" onclick="showAdminSection('stats')">${t('menuStats')} <span class="chev">›</span></div>
+    <div class="admin-menu-item" onclick="showAdminSection('config')">${t('menuConfig')} <span class="chev">›</span></div>`;
+}
+
+function showAdminSection(section){
+  document.getElementById('adminBackBtn').style.display='inline-block';
+  const titles = {manage:t('menuManage'),promo:t('menuPromo'),payments:t('menuPayments'),users:t('menuUsers'),stats:t('menuStats'),config:t('menuConfig')};
+  document.getElementById('adminTitle').textContent = titles[section] || t('adminMainTitle');
+  const body = document.getElementById('adminContent');
+  if(section==='manage'){
+    body.innerHTML = `<button class="btn btn-primary" onclick="openApkEdit(null)">${t('addApk')}</button>
+      <div style="margin-top:12px;">${apks.map(a=>`
+        <div class="apk-admin-row">
+          <div class="thumb">${a.icon?`<img src="${a.icon}">`:'📱'}</div>
+          <div class="meta"><div class="n">${a.name}</div><div class="d">${catLabel(a.cat)} • ${fmtPrice(a.price)} • ${a.downloads} DL</div></div>
+          <button class="mini-btn" style="background:var(--blue-light);color:var(--blue-dark);" onclick="openApkEdit('${a.id}')">${t('edit')}</button>
+          <button class="mini-btn btn-danger" onclick="deleteApk('${a.id}')">${t('del')}</button>
+        </div>`).join('') || `<p class="empty-note">${t('noApk')}</p>`}</div>`;
+  } else if(section==='promo'){
+    body.innerHTML = `<label>${t('promoBannerLbl')}</label><input id="promoInput" value="${settings.promoText}">
+      <label>${t('announceTxtLbl')}</label><textarea id="announceInput">${settings.announceText}</textarea>
+      <button class="btn btn-primary" onclick="savePromo()">${t('savePromo')}</button>`;
+  } else if(section==='payments'){
+    body.innerHTML = `<p class="small-note" style="margin-bottom:10px;">${t('payIntro')}</p>
+      <label>${t('payMoncash')}</label><input id="pay_moncash" value="${settings.pay.moncash}">
+      <label>${t('payNatcash')}</label><input id="pay_natcash" value="${settings.pay.natcash}">
+      <label>${t('payAyipay')}</label><input id="pay_ayipay" value="${settings.pay.ayipay}">
+      <label>${t('payPaypal')}</label><input id="pay_paypal" value="${settings.pay.paypal}">
+      <button class="btn btn-primary" onclick="savePayments()">${t('savePayments')}</button>
+      <p class="small-note">${t('ayipayNote')}</p>`;
+  } else if(section==='users'){
+    body.innerHTML = `<p class="small-note" style="margin-bottom:10px;">${t('usersIntro')}</p><div id="usersListBox"><p class="empty-note">${LANG==='fr'?'Chargement...':'Ap chaje...'}</p></div>`;
+    db.collection('users').get().then(function(snap){
+      const box = document.getElementById('usersListBox');
+      if(!box) return;
+      if(snap.empty){ box.innerHTML = `<p class="empty-note">${t('noApk')}</p>`; return; }
+      box.innerHTML = snap.docs.map(function(d){
+        const u = d.data();
+        const dlCount = (u.downloads||[]).length;
+        const purCount = (u.purchases||[]).length;
+        return `<div class="apk-admin-row"><div class="thumb">👤</div><div class="meta"><div class="n">${(u.firstName||'')+' '+(u.lastName||'')}</div><div class="d">${dlCount} ${t('demoDL')} • ${purCount} ${LANG==='fr'?'achats':'acha'}</div></div></div>`;
+      }).join('');
+    }).catch(function(err){
+      const box = document.getElementById('usersListBox');
+      if(box) box.innerHTML = `<p class="empty-note">Firestore: ${err.message}</p>`;
+    });
+  } else if(section==='stats'){
+    const totalDL = apks.reduce((s,a)=>s+(a.downloads||0),0);
+    const revenue = apks.reduce((s,a)=>s+(a.price>0?a.price*a.downloads:0),0);
+    body.innerHTML = `
+      <div class="apk-admin-row"><div class="meta"><div class="n">${t('statTotalApk')}</div><div class="d">${apks.length} ${t('statTotalApkD')}</div></div></div>
+      <div class="apk-admin-row"><div class="meta"><div class="n">${t('statTotalDL')}</div><div class="d">${totalDL} ${t('statTotalDLd')}</div></div></div>
+      <div class="apk-admin-row"><div class="meta"><div class="n">${t('statRevenue')}</div><div class="d">${revenue} HTG</div></div></div>`;
+  } else if(section==='config'){
+    body.innerHTML = `<label>${t('changePassLbl')}</label><input id="newPassInput" placeholder="****">
+      <button class="btn btn-primary" onclick="changeAdminPass()">${t('changePassBtn')}</button>`;
+  }
+}
+function savePromo(){
+  const promoText = document.getElementById('promoInput').value || settings.promoText;
+  const announceText = document.getElementById('announceInput').value || settings.announceText;
+  db.collection('settings').doc('global').set({promoText, announceText}, {merge:true})
+    .then(function(){ toast(t('promoSaved')); })
+    .catch(function(err){ toast('Firestore: '+err.message); });
+}
+function savePayments(){
+  const pay = {
+    moncash: document.getElementById('pay_moncash').value.trim(),
+    natcash: document.getElementById('pay_natcash').value.trim(),
+    ayipay: document.getElementById('pay_ayipay').value.trim(),
+    paypal: document.getElementById('pay_paypal').value.trim()
+  };
+  db.collection('settings').doc('global').set({pay}, {merge:true})
+    .then(function(){ toast(t('paySaved')); })
+    .catch(function(err){ toast('Firestore: '+err.message); });
+}
+function changeAdminPass(){
+  const np = document.getElementById('newPassInput').value.trim();
+  if(np.length<4){ toast(t('passTooShort')); return; }
+  if(!auth.currentUser){ toast(t('passTooShort')); return; }
+  auth.currentUser.updatePassword(np)
+    .then(function(){ toast(t('passChanged')); })
+    .catch(function(err){ toast(err.message); });
+}
+
+/* ================= APK EDIT ================= */
+function togglePriceField(){
+  const isFree = document.getElementById('f_pricetype').value==='free';
+  document.getElementById('f_price').disabled = isFree;
+  if(isFree) document.getElementById('f_price').value='';
+}
+function openApkEdit(id){
+  document.getElementById('apkEditTitle').textContent = id ? t('editApkTitle') : t('addApkTitle');
+  document.getElementById('f_id').value = id || '';
+  const a = id ? apks.find(x=>x.id===id) : null;
+  document.getElementById('f_name').value = a? a.name:'';
+  document.getElementById('f_cat').value = a? a.cat:'jwet';
+  document.getElementById('f_desc').value = a? a.desc:'';
+  document.getElementById('f_rating').value = a? a.rating:4.5;
+  document.getElementById('f_pricetype').value = a && a.price>0 ? 'paid':'free';
+  document.getElementById('f_price').value = a && a.price>0 ? a.price:'';
+  document.getElementById('f_price').disabled = !(a && a.price>0);
+  document.getElementById('f_icon').value='';
+  document.getElementById('f_apk').value = a? (a.apkData||''):'';
+  window._editIcon = a? a.icon:'';
+  openModal('apkEditOverlay');
+}
+function saveApk(){
+  const id = document.getElementById('f_id').value || db.collection('apks').doc().id;
+  const name = document.getElementById('f_name').value.trim();
+  if(!name){ toast(t('enterName')); return; }
+  const cat = document.getElementById('f_cat').value;
+  const desc = document.getElementById('f_desc').value.trim();
+  const rating = parseFloat(document.getElementById('f_rating').value)||0;
+  const pricetype = document.getElementById('f_pricetype').value;
+  const price = pricetype==='paid' ? (parseFloat(document.getElementById('f_price').value)||0) : 0;
+  const iconFile = document.getElementById('f_icon').files[0];
+  const apkLink = document.getElementById('f_apk').value.trim();
+  function finish(iconData){
+    const existing = apks.find(x=>x.id===id);
+    const entry = {name, cat, desc, rating, price,
+      icon: iconData!==undefined ? iconData : (window._editIcon||''),
+      apkData: apkLink,
+      downloads: existing ? (existing.downloads||0) : 0};
+    db.collection('apks').doc(id).set(entry)
+      .then(function(){
+        closeModal('apkEditOverlay');
+        showAdminSection('manage');
+        toast(t('apkSaved'));
+      })
+      .catch(function(err){ toast('Firestore: '+err.message); });
+  }
+  if(iconFile){ resizeImageToDataURL(iconFile, 200, 0.7, finish); }
+  else { finish(undefined); }
+}
+function deleteApk(id){
+  if(!confirm(t('confirmDelete'))) return;
+  db.collection('apks').doc(id).delete()
+    .then(function(){ showAdminSection('manage'); toast(t('apkDeleted')); })
+    .catch(function(err){ toast('Firestore: '+err.message); });
+}
+
+/* ================= INIT ================= */
+applyLang();
+renderAll();
+updateHeaderProfileIcon();
+</script>
+</body>
+</html>
