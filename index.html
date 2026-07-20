@@ -935,7 +935,9 @@ async function confirmPayWithAyiPay(){
     const newBalance = await ayipayDb.runTransaction(async function(tx){
       const snap = await tx.get(walletRef);
       if(!snap.exists) throw new Error('NO_WALLET');
-      const bal = snap.data().balans || 0;
+      const data = snap.data();
+      if(data.bloke === true) throw new Error('CARD_BLOCKED');
+      const bal = data.balans || 0;
       if(bal < price) throw new Error('INSUFFICIENT');
       const nb = bal - price;
       tx.update(walletRef, { balans: nb, updated: Date.now() });
@@ -945,7 +947,6 @@ async function confirmPayWithAyiPay(){
     await ayipayDb.collection('wing_purchases').add({
       uid: uid, apkName: a.name, price: price, date: Date.now()
     });
-    await ayipayAuth.signOut();
     toast((LANG==='fr'?`Payé avec succès ! Nouveau solde AyiPay: ${newBalance.toLocaleString()} HTG`:`Peye ak siksè! Nouvo balans AyiPay: ${newBalance.toLocaleString()} HTG`));
     const u = getCurrentUser();
     if(u && pendingPayId && !(u.purchases||[]).includes(pendingPayId)){
@@ -958,6 +959,8 @@ async function confirmPayWithAyiPay(){
   } catch(err){
     if(err.message === 'INSUFFICIENT'){
       toast(LANG==='fr'?'❌ Solde AyiPay insuffisant pour cet achat':'❌ Balans AyiPay ou pa ase pou acha sa a');
+    } else if(err.message === 'CARD_BLOCKED'){
+      toast(LANG==='fr'?'🔒 Votre carte AyiPay est bloquée — débloquez-la dans AyiPay pour pouvoir acheter.':'🔒 Kat AyiPay ou bloke — debloke l nan AyiPay pou w ka fè acha.');
     } else if(err.message === 'NO_WALLET'){
       toast(LANG==='fr'?'Compte AyiPay non trouvé ou pas encore synchronisé':'Kont AyiPay pa jwenn oswa poko senkwonize');
     } else if(err.code && err.code.startsWith('auth/')){
@@ -966,6 +969,7 @@ async function confirmPayWithAyiPay(){
       toast((LANG==='fr'?'Erreur: ':'Erè: ')+(err.message||err));
     }
   } finally {
+    try { await ayipayAuth.signOut(); } catch(e) {}
     btn.disabled = false; btn.textContent = oldTxt;
   }
 }
