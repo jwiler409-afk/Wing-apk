@@ -220,6 +220,12 @@
     <div class="pay-opt" data-m="AyiPay" onclick="selectPay(this)"><span class="pay-dot" style="background:#0d2b52;">A</span> AyiPay</div>
     <div class="pay-opt" data-m="PayPal" onclick="selectPay(this)"><span class="pay-dot pp">P</span> <span data-i18n="paypalIntl"></span></div>
     <div id="payNumberNote" class="small-note" style="background:var(--blue-light);padding:10px;border-radius:8px;display:none;"></div>
+    <div id="ayipayLoginBox" style="display:none;margin-top:8px;">
+      <label style="font-size:12px;font-weight:700;color:var(--blue-dark);">Imel AyiPay</label>
+      <input type="email" id="ayipayEmailInput" placeholder="imel@egzanp.com">
+      <label style="font-size:12px;font-weight:700;color:var(--blue-dark);">Mo de pas AyiPay</label>
+      <input type="password" id="ayipayPassInput" placeholder="••••••••">
+    </div>
     <button class="btn btn-primary" id="confirmPayBtn" onclick="confirmPay()"></button>
   </div>
 </div>
@@ -289,6 +295,12 @@
     <label id="lbl_apkfile">Fichye APK (.apk)</label>
     <input type="text" id="f_apk" placeholder="https://github.com/.../releases/download/.../App.apk">
     <p class="small-note" id="apkLinkNote"></p>
+    <label id="lbl_size">Taille APK (mt: 3.4 MB)</label>
+    <input type="text" id="f_size" placeholder="3.4 MB">
+    <label id="lbl_version">Vèsyon (mt: 1.0.0)</label>
+    <input type="text" id="f_version" placeholder="1.0.0">
+    <label id="lbl_pkg">Non Package Android (pou bouton dezenstale, mt: com.wiler.app)</label>
+    <input type="text" id="f_pkg" placeholder="com.wiler.appname">
     <label>Rating (0-5)</label>
     <input id="f_rating" type="number" step="0.1" min="0" max="5" value="4.5">
     <label id="lbl_price">Pri</label>
@@ -321,6 +333,20 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
   const auth = firebase.auth();
+
+  /* ── Dezyèm app Firebase: konekte ak AyiPay pou peman ak balans reyèl ── */
+  const ayipayConfig = {
+    apiKey: "AIzaSyBq1w2MV9YmQYe7sVHxS2VHiKvs7FCriws",
+    authDomain: "ayipay-75f0c.firebaseapp.com",
+    projectId: "ayipay-75f0c",
+    storageBucket: "ayipay-75f0c.firebasestorage.app",
+    messagingSenderId: "819866779046",
+    appId: "1:819866779046:web:c4a89d9c0ae5d33c732367"
+  };
+  const ayipayApp = firebase.initializeApp(ayipayConfig, 'ayipayApp');
+  const ayipayDb = ayipayApp.firestore();
+  const ayipayAuth = ayipayApp.auth();
+
 </script>
 
 <script>
@@ -382,6 +408,8 @@ const I18N = {
     myPurchases:'APK Mwen Achte', noPurchases:'Ou poko achte okenn APK peye.',
     alreadyOwned:'Ou gentan achte APK sa a — telechajman gratis!', purchaseSavedNote:'Achte anrejistre sou kont ou — w ap ka telechaje l gratis pita.',
     guestPurchaseNote:'💡 Kreye yon pwofil pou w pa peye ankò lè w vle telechaje APK sa a yon lòt fwa.',
+    mustLoginToEdit:'🔒 Ou dwe konekte oswa kreye yon Pwofil Wing anvan ou ka modifye done yo (Firebase mande sa pou sekirite). Konekte kounye a, epi reouvri panel admin lan.',
+    yourUidLbl:'UID Firebase Ou (voye l bay Claude pou vèwouye règ yo)', copyUidBtn:'Kopye UID', uidCopied:'UID kopye!', notLoggedInNote:'Konekte ak yon Pwofil Wing pou wè UID ou.',
   },
   fr:{
     brandSub:'Téléchargeur APK',
@@ -439,6 +467,8 @@ const I18N = {
     myPurchases:'Mes APK Achetés', noPurchases:'Vous n\'avez encore acheté aucun APK payant.',
     alreadyOwned:'Vous possédez déjà cet APK — téléchargement gratuit !', purchaseSavedNote:'Achat enregistré sur votre compte — vous pourrez le retélécharger gratuitement.',
     guestPurchaseNote:'💡 Créez un profil pour ne plus payer la prochaine fois que vous téléchargez cet APK.',
+    mustLoginToEdit:'🔒 Vous devez vous connecter ou créer un Profil Wing avant de pouvoir modifier les données (Firebase l\'exige pour la sécurité). Connectez-vous maintenant, puis rouvrez le panneau admin.',
+    yourUidLbl:'Votre UID Firebase (envoyez-le à Claude pour verrouiller les règles)', copyUidBtn:'Copier UID', uidCopied:'UID copié !', notLoggedInNote:'Connectez-vous avec un Profil Wing pour voir votre UID.',
   }
 };
 let LANG = localStorage.getItem('wing_lang') || 'ht';
@@ -727,8 +757,8 @@ function openNotif(){
 /* MY DOWNLOADS */
 function loadGuestDownloads(){ const s = localStorage.getItem('wing_my_downloads'); return s ? JSON.parse(s) : []; }
 function saveGuestDownloads(list){ localStorage.setItem('wing_my_downloads', JSON.stringify(list)); }
-function recordDownload(a){
-  const entry = {id:a.id, name:a.name, icon:a.icon||'', price:a.price, date:new Date().toISOString()};
+function recordDownload(a, localUri){
+  const entry = {id:a.id, name:a.name, icon:a.icon||'', price:a.price, date:new Date().toISOString(), pkg:a.pkg||'', localUri:localUri||''};
   const u = getCurrentUser();
   if(u){
     let list = (u.downloads||[]).slice();
@@ -750,10 +780,14 @@ function openMyDownloads(){
     const dt = new Date(d.date);
     const dstr = dt.toLocaleDateString(LANG==='fr'?'fr-FR':'fr-HT', {day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + dt.toLocaleTimeString(LANG==='fr'?'fr-FR':'fr-HT',{hour:'2-digit',minute:'2-digit'});
     const iconHTML = d.icon ? `<img src="${d.icon}">` : '📱';
-    return `<div class="dl-row">
+    const nativeBtns = isNativeApp() ? `
+      ${d.localUri ? `<button class="mini-btn" style="background:#1f8a4c;color:#fff;" onclick="reinstallApk('${d.localUri}')">${t('installBtn')}</button>` : ''}
+      ${d.pkg ? `<button class="mini-btn btn-danger" onclick="uninstallApk('${d.pkg}')">${t('uninstallBtn')}</button>` : ''}` : '';
+    return `<div class="dl-row" style="flex-wrap:wrap;">
       <div class="thumb">${iconHTML}</div>
       <div class="meta"><div class="n">${d.name}</div><div class="d">${dstr} • ${fmtPrice(d.price)}</div></div>
       <button class="mini-btn" style="background:var(--blue-light);color:var(--blue-dark);" onclick="doDownload('${d.id}')">${t('myDlAgain')}</button>
+      ${nativeBtns}
     </div>`;
   }).join('');
   openModal('myDlOverlay');
@@ -764,7 +798,7 @@ function openDetail(id){
   const a = apks.find(x=>x.id===id); if(!a) return;
   currentDetailId = id;
   document.getElementById('detailName').textContent = a.name;
-  document.getElementById('detailMeta').textContent = `${catLabel(a.cat)} • ⭐ ${a.rating} • ${fmtPrice(a.price)} • ${a.downloads} ${LANG==='fr'?'téléchargements':'telechajman'}`;
+  document.getElementById('detailMeta').textContent = `${catLabel(a.cat)} • ⭐ ${a.rating} • ${fmtPrice(a.price)} • ${a.downloads} ${LANG==='fr'?'téléchargements':'telechajman'}${a.version?' • v'+a.version:''}${a.size?' • '+a.size:''}`;
   document.getElementById('detailDesc').textContent = a.desc || '';
   const btn = document.getElementById('detailActionBtn');
   const owned = a.price>0 && ownsApk(id);
@@ -791,26 +825,43 @@ async function doDownloadNative(a){
     const { FileOpener } = window.Capacitor.Plugins;
     const fileInfo = await Filesystem.getUri({ directory: Directory.Cache, path: fileName });
     await FileTransfer.downloadFile({ url: a.apkData, path: fileInfo.uri, progress: false });
+    recordDownload(a, fileInfo.uri);
     await FileOpener.openFile({ path: fileInfo.uri, mimeType: 'application/vnd.android.package-archive' });
   }catch(err){
     toast((LANG==='fr'?'Erreur de téléchargement: ':'Erè telechajman: ')+(err && err.message ? err.message : err));
   }
 }
+async function reinstallApk(localUri){
+  if(!isNativeApp()){ toast(LANG==='fr'?'Disponible seulement dans l\'app Android':'Sèlman disponib nan app Android lan'); return; }
+  if(!localUri){ toast(LANG==='fr'?'Fichier introuvable, retéléchargez':'Fichye a pa jwenn, telechaje ankò'); return; }
+  try{
+    const { FileOpener } = window.Capacitor.Plugins;
+    await FileOpener.openFile({ path: localUri, mimeType: 'application/vnd.android.package-archive' });
+  }catch(err){
+    toast((LANG==='fr'?'Erreur: ':'Erè: ')+(err && err.message ? err.message : err));
+  }
+}
+function uninstallApk(pkg){
+  if(!isNativeApp()){ toast(LANG==='fr'?'Disponible seulement dans l\'app Android':'Sèlman disponib nan app Android lan'); return; }
+  if(!pkg){ toast(LANG==='fr'?'Nom de package manquant':'Non package pa mete'); return; }
+  window.location.href = `intent:#Intent;action=android.intent.action.DELETE;data=package:${pkg};end`;
+}
 function doDownload(id){
   const a = apks.find(x=>x.id===id); if(!a) return;
   db.collection('apks').doc(id).update({downloads: (a.downloads||0)+1}).catch(function(err){ toast('Firestore: '+err.message); });
-  recordDownload(a);
   if(isNativeApp() && a.apkData && !a.apkData.startsWith('data:')){
     /* running inside the packaged Android app: download to device storage and open the system installer directly, without leaving Wing */
     doDownloadNative(a);
   } else if(a.apkData && a.apkData.startsWith('data:')){
     /* legacy: old base64-stored file (from before external links) */
+    recordDownload(a);
     const link=document.createElement('a');
     link.href=a.apkData; link.download=(a.name.replace(/\s+/g,'_')+'.apk');
     document.body.appendChild(link); link.click(); link.remove();
     toast(t('dlStart'));
   } else if(a.apkData){
     /* website / no native plugins available: external direct link (GitHub Release, Google Drive, etc.) */
+    recordDownload(a);
     const link=document.createElement('a');
     link.href=a.apkData; link.target='_blank'; link.rel='noopener';
     document.body.appendChild(link); link.click(); link.remove();
@@ -833,19 +884,25 @@ function selectPay(el){
   document.querySelectorAll('.pay-opt').forEach(e=>e.classList.remove('selected'));
   el.classList.add('selected'); selectedPayMethod=el.dataset.m;
   const note = document.getElementById('payNumberNote');
+  const ayipayBox = document.getElementById('ayipayLoginBox');
   note.style.display='block';
-  if(selectedPayMethod==='PayPal'){
+  ayipayBox.style.display = (selectedPayMethod==='AyiPay') ? 'block' : 'none';
+  if(selectedPayMethod==='AyiPay'){
+    note.textContent = LANG==='fr' ? 'Connectez-vous à votre compte AyiPay pour payer directement depuis votre solde.' : 'Konekte ak kont AyiPay ou pou peye dirèkteman ak balans ou.';
+  } else if(selectedPayMethod==='PayPal'){
     note.textContent = settings.pay.paypal ? `${t('payToPaypal')} ${settings.pay.paypal}` : t('payPaypalNC');
-  } else if(selectedPayMethod==='AyiPay'){
-    note.textContent = settings.pay.ayipay ? `${t('ayipaySend')} ${settings.pay.ayipay}. ${t('ayipaySoon')}` : `AyiPay ${t('payGenericNC')} ${t('ayipaySoon')}`;
   } else {
     const key = selectedPayMethod.toLowerCase();
     const num = settings.pay[key];
     note.textContent = num ? `${t('sendMoneyTo')} ${selectedPayMethod} ${LANG==='fr'?'au numéro':'nan nimewo'}: ${num}, ${t('thenClick')}` : `${selectedPayMethod} ${t('payGenericNC')}`;
   }
 }
-function confirmPay(){
+async function confirmPay(){
   if(!selectedPayMethod){ toast(t('chooseMethod')); return; }
+  if(selectedPayMethod === 'AyiPay'){
+    await confirmPayWithAyiPay();
+    return;
+  }
   const u = getCurrentUser();
   if(u && pendingPayId && !(u.purchases||[]).includes(pendingPayId)){
     const newPurchases = (u.purchases||[]).concat([pendingPayId]);
@@ -859,6 +916,58 @@ function confirmPay(){
   }
   closeModal('payOverlay');
   if(pendingPayId) doDownload(pendingPayId);
+}
+
+async function confirmPayWithAyiPay(){
+  const email = document.getElementById('ayipayEmailInput').value.trim();
+  const pass = document.getElementById('ayipayPassInput').value;
+  const a = apks.find(x=>x.id===pendingPayId);
+  if(!a){ toast(t('dlMissing')); return; }
+  if(!email || !pass){ toast(LANG==='fr'?'Entrez votre email et mot de passe AyiPay':'Antre imel ak mo de pas AyiPay ou'); return; }
+  const btn = document.getElementById('confirmPayBtn');
+  const oldTxt = btn.textContent;
+  btn.disabled = true; btn.textContent = LANG==='fr'?'Vérification...':'Verifikasyon...';
+  try{
+    const cred = await ayipayAuth.signInWithEmailAndPassword(email, pass);
+    const uid = cred.user.uid;
+    const price = a.price || 0;
+    const walletRef = ayipayDb.collection('wallets').doc(uid);
+    const newBalance = await ayipayDb.runTransaction(async function(tx){
+      const snap = await tx.get(walletRef);
+      if(!snap.exists) throw new Error('NO_WALLET');
+      const bal = snap.data().balans || 0;
+      if(bal < price) throw new Error('INSUFFICIENT');
+      const nb = bal - price;
+      tx.update(walletRef, { balans: nb, updated: Date.now() });
+      return nb;
+    });
+    // Anrejistre acha a pou l parèt nan istorik AyiPay a
+    await ayipayDb.collection('wing_purchases').add({
+      uid: uid, apkName: a.name, price: price, date: Date.now()
+    });
+    await ayipayAuth.signOut();
+    toast((LANG==='fr'?`Payé avec succès ! Nouveau solde AyiPay: ${newBalance.toLocaleString()} HTG`:`Peye ak siksè! Nouvo balans AyiPay: ${newBalance.toLocaleString()} HTG`));
+    const u = getCurrentUser();
+    if(u && pendingPayId && !(u.purchases||[]).includes(pendingPayId)){
+      const newPurchases = (u.purchases||[]).concat([pendingPayId]);
+      u.purchases = newPurchases;
+      db.collection('users').doc(u.uid).update({purchases:newPurchases}).catch(function(){});
+    }
+    closeModal('payOverlay');
+    doDownload(pendingPayId);
+  } catch(err){
+    if(err.message === 'INSUFFICIENT'){
+      toast(LANG==='fr'?'❌ Solde AyiPay insuffisant pour cet achat':'❌ Balans AyiPay ou pa ase pou acha sa a');
+    } else if(err.message === 'NO_WALLET'){
+      toast(LANG==='fr'?'Compte AyiPay non trouvé ou pas encore synchronisé':'Kont AyiPay pa jwenn oswa poko senkwonize');
+    } else if(err.code && err.code.startsWith('auth/')){
+      toast(LANG==='fr'?'Email ou mot de passe AyiPay incorrect':'Imel oswa mo de pas AyiPay pa kòrèk');
+    } else {
+      toast((LANG==='fr'?'Erreur: ':'Erè: ')+(err.message||err));
+    }
+  } finally {
+    btn.disabled = false; btn.textContent = oldTxt;
+  }
 }
 
 /* ================= HIDDEN ADMIN ACCESS ================= */
@@ -950,11 +1059,24 @@ function showAdminSection(section){
       <div class="apk-admin-row"><div class="meta"><div class="n">${t('statTotalDL')}</div><div class="d">${totalDL} ${t('statTotalDLd')}</div></div></div>
       <div class="apk-admin-row"><div class="meta"><div class="n">${t('statRevenue')}</div><div class="d">${revenue} HTG</div></div></div>`;
   } else if(section==='config'){
+    const uid = auth.currentUser ? auth.currentUser.uid : null;
     body.innerHTML = `<label>${t('changePassLbl')}</label><input id="newPassInput" placeholder="****">
-      <button class="btn btn-primary" onclick="changeAdminPass()">${t('changePassBtn')}</button>`;
+      <button class="btn btn-primary" onclick="changeAdminPass()">${t('changePassBtn')}</button>
+      <label style="margin-top:20px;">${t('yourUidLbl')}</label>
+      ${uid ? `<input value="${uid}" readonly onclick="this.select()">
+        <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${uid}');toast(t('uidCopied'))">${t('copyUidBtn')}</button>`
+        : `<p class="empty-note">${t('notLoggedInNote')}</p>`}`;
   }
 }
+function requireAuthOrPrompt(){
+  if(auth.currentUser) return true;
+  toast(t('mustLoginToEdit'));
+  closeAdminPanel();
+  profileMode='login'; renderProfileOverlay(); openModal('profileOverlay');
+  return false;
+}
 function savePromo(){
+  if(!requireAuthOrPrompt()) return;
   const promoText = document.getElementById('promoInput').value || settings.promoText;
   const announceText = document.getElementById('announceInput').value || settings.announceText;
   db.collection('settings').doc('global').set({promoText, announceText}, {merge:true})
@@ -962,6 +1084,7 @@ function savePromo(){
     .catch(function(err){ toast('Firestore: '+err.message); });
 }
 function savePayments(){
+  if(!requireAuthOrPrompt()) return;
   const pay = {
     moncash: document.getElementById('pay_moncash').value.trim(),
     natcash: document.getElementById('pay_natcash').value.trim(),
@@ -1000,10 +1123,14 @@ function openApkEdit(id){
   document.getElementById('f_price').disabled = !(a && a.price>0);
   document.getElementById('f_icon').value='';
   document.getElementById('f_apk').value = a? (a.apkData||''):'';
+  document.getElementById('f_size').value = a? (a.size||''):'';
+  document.getElementById('f_version').value = a? (a.version||''):'';
+  document.getElementById('f_pkg').value = a? (a.pkg||''):'';
   window._editIcon = a? a.icon:'';
   openModal('apkEditOverlay');
 }
 function saveApk(){
+  if(!requireAuthOrPrompt()) return;
   const id = document.getElementById('f_id').value || db.collection('apks').doc().id;
   const name = document.getElementById('f_name').value.trim();
   if(!name){ toast(t('enterName')); return; }
@@ -1014,9 +1141,12 @@ function saveApk(){
   const price = pricetype==='paid' ? (parseFloat(document.getElementById('f_price').value)||0) : 0;
   const iconFile = document.getElementById('f_icon').files[0];
   const apkLink = document.getElementById('f_apk').value.trim();
+  const size = document.getElementById('f_size').value.trim();
+  const version = document.getElementById('f_version').value.trim();
+  const pkg = document.getElementById('f_pkg').value.trim();
   function finish(iconData){
     const existing = apks.find(x=>x.id===id);
-    const entry = {name, cat, desc, rating, price,
+    const entry = {name, cat, desc, rating, price, size, version, pkg,
       icon: iconData!==undefined ? iconData : (window._editIcon||''),
       apkData: apkLink,
       downloads: existing ? (existing.downloads||0) : 0};
@@ -1032,6 +1162,7 @@ function saveApk(){
   else { finish(undefined); }
 }
 function deleteApk(id){
+  if(!requireAuthOrPrompt()) return;
   if(!confirm(t('confirmDelete'))) return;
   db.collection('apks').doc(id).delete()
     .then(function(){ showAdminSection('manage'); toast(t('apkDeleted')); })
