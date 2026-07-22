@@ -18,6 +18,8 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Roboto,Arial,sans-serif;}
   body{background:var(--bg);color:var(--blue-dark);padding-bottom:70px;}
+  body.desktop-mode .app{max-width:1100px;margin:0 auto;}
+  body.desktop-mode #apkGrid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))!important;}
   .app{max-width:480px;margin:0 auto;background:var(--bg);min-height:100vh;position:relative;}
 
   header{background:linear-gradient(135deg,#0d2b52,#1a4d8f);padding:14px 16px 10px;color:#fff;}
@@ -34,8 +36,17 @@
   .fb-status{display:flex;align-items:center;gap:5px;font-size:9px;font-weight:700;color:#fff;opacity:.9;}
   .fb-dot{width:8px;height:8px;border-radius:50%;background:#9aa9bb;flex-shrink:0;transition:background .2s;}
   .fb-dot.online{background:#2ecc71;box-shadow:0 0 4px #2ecc71;}
-  .fb-dot.offline{background:#e74c3c;box-shadow:0 0 4px #e74c3c;}
+  .fb-dot.offline{background:#5b6b7c;box-shadow:0 0 4px #5b6b7c;}
   .fb-dot.checking{background:#f5a623;}
+  .ss-thumb-wrap{position:relative;width:64px;height:64px;}
+  .ss-thumb-wrap img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #dde5f0;}
+  .ss-thumb-wrap .ss-remove{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:#c8102e;color:#fff;border:none;font-size:12px;line-height:20px;text-align:center;cursor:pointer;padding:0;}
+  .ss-gallery{display:flex;gap:8px;overflow-x:auto;margin:10px 0;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
+  .ss-gallery img{height:170px;width:auto;border-radius:10px;flex-shrink:0;cursor:pointer;border:1px solid #dde5f0;}
+  .ss-lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:400;display:none;align-items:center;justify-content:center;}
+  .ss-lightbox-overlay.show{display:flex;}
+  .ss-lightbox-overlay img{max-width:92vw;max-height:88vh;border-radius:8px;}
+  .ss-lightbox-overlay .close-x{position:absolute;top:16px;right:16px;color:#fff;background:rgba(255,255,255,.15);}
   .admin-fb-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:#fff;background:rgba(255,255,255,.12);padding:5px 10px;border-radius:12px;margin-left:8px;flex-shrink:0;}
   .badge-dot{position:absolute;top:-2px;right:-2px;background:var(--red);color:#fff;font-size:9px;border-radius:8px;padding:1px 4px;font-weight:700;}
   .search-row{margin-top:12px;background:#fff;border-radius:20px;display:flex;align-items:center;padding:8px 14px;gap:8px;}
@@ -156,6 +167,7 @@
       <div class="header-icons">
         <div class="fb-status" id="fbStatusHeader" title="Estati Firebase"><span class="fb-dot checking" id="fbDotHeader"></span><span id="fbTextHeader">...</span></div>
         <button class="lang-btn" id="langBtn" onclick="toggleLang()">FR</button>
+        <div class="icon-btn" onclick="openRequestApk()" title="Mande yon APK">✉️</div>
         <div class="icon-btn" onclick="openMyDownloads()" title="Telechajman Mwen">📥</div>
         <div class="icon-btn" onclick="openNotif()">🔔<span class="badge-dot" id="notifBadge">1</span></div>
         <div class="icon-btn" id="headerProfileIcon" onclick="openProfile()">👤</div>
@@ -170,9 +182,9 @@
   <div class="promo-banner" id="promoBanner"></div>
 
   <div class="quick-grid">
+    <div class="quick-item" onclick="openUpdatesModal()">🔄<div data-i18n="qUpdate"><span class="qi-note" data-i18n="qUpdateNote"></span></div></div>
     <div class="quick-item" onclick="setFilter('free')">⬇️<div data-i18n="qFree"></div></div>
     <div class="quick-item" onclick="setFilter('paid')">🛒<div data-i18n="qPaid"></div></div>
-    <div class="quick-item" onclick="setFilter('all');toast(t('qUpdateToast'))">🔄<div data-i18n="qUpdate"><span class="qi-note" data-i18n="qUpdateNote"></span></div></div>
     <div class="quick-item" onclick="openPaymentSettings()">💳<div data-i18n="qCard"></div></div>
   </div>
 
@@ -194,7 +206,7 @@
     <div class="nav-item active"><span class="ni-icon">🏠</span><span data-i18n="navHome"></span></div>
     <div class="nav-item" onclick="document.querySelector('.section-title').scrollIntoView({behavior:'smooth'})"><span class="ni-icon">📂</span><span data-i18n="navCat"></span></div>
     <div class="nav-item" onclick="setFilter('all')"><span class="ni-icon">🔄</span><span data-i18n="navUpdate"></span></div>
-    <div class="nav-item" onclick="toast(t('cartEmpty'))"><span class="ni-icon">🛒</span><span data-i18n="navCart"></span></div>
+    <div class="nav-item" onclick="openCart()"><span class="ni-icon">🛒</span><span data-i18n="navCart"></span><span class="badge-dot" id="cartBadge" style="display:none;"></span></div>
   </div>
 </div>
 
@@ -204,10 +216,18 @@
     <button class="close-x" onclick="closeModal('detailOverlay')">✕</button>
     <h3 id="detailName">Non APK</h3>
     <div class="small-note" id="detailMeta"></div>
+    <div class="ss-gallery" id="detailScreenshots" style="display:none;"></div>
     <p class="small-note" id="detailDesc" style="margin-top:10px;"></p>
     <button class="btn btn-primary" id="detailActionBtn">Telechaje</button>
+    <button class="btn btn-o" id="detailCartBtn" style="margin-top:8px;display:none;" onclick="addToCart(currentDetailId)">🛒 Ajoute nan Panye</button>
     <p class="small-note" data-i18n="unknownSourceNote"></p>
   </div>
+</div>
+
+<!-- SCREENSHOT LIGHTBOX -->
+<div class="ss-lightbox-overlay" id="ssLightboxOverlay" onclick="closeScreenshotLightbox()">
+  <button class="close-x" onclick="event.stopPropagation();closeScreenshotLightbox()">✕</button>
+  <img id="ssLightboxImg" src="" onclick="event.stopPropagation();">
 </div>
 
 <!-- PAYMENT MODAL -->
@@ -226,7 +246,53 @@
       <label style="font-size:12px;font-weight:700;color:var(--blue-dark);">Mo de pas AyiPay</label>
       <input type="password" id="ayipayPassInput" placeholder="••••••••">
     </div>
+    <div id="payRefBox" style="display:none;margin-top:8px;">
+      <label style="font-size:12px;font-weight:700;color:var(--blue-dark);">Nimewo telefòn ou voye lajan an soti (pou verifikasyon)</label>
+      <input type="text" id="payRefInput" placeholder="Egz: 3712-3456">
+    </div>
     <button class="btn btn-primary" id="confirmPayBtn" onclick="confirmPay()"></button>
+  </div>
+</div>
+
+<!-- REQUEST APK MODAL -->
+<div class="overlay" id="requestApkOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('requestApkOverlay')">✕</button>
+    <h3>✉️ Mande yon APK</h3>
+    <p class="small-note" style="margin-bottom:10px;">Dekri APK ou bezwen an, admin ap kontakte w pou negosye.</p>
+    <label style="font-size:12px;font-weight:700;color:var(--blue-dark);">Deskripsyon APK ou bezwen an</label>
+    <textarea id="reqApkDesc" rows="4" placeholder="Egz: Mwen bezwen yon app pou jere kès yon boutik..."></textarea>
+    <label style="font-size:12px;font-weight:700;color:var(--blue-dark);">Nimewo WhatsApp ou (pou admin kontakte w)</label>
+    <input type="text" id="reqApkContact" placeholder="Egz: 3712-3456">
+    <button class="btn btn-primary" id="reqApkBtn" onclick="submitApkRequest()">Voye Demand la</button>
+  </div>
+</div>
+
+<!-- CART MODAL -->
+<div class="overlay" id="cartOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('cartOverlay')">✕</button>
+    <h3 id="cartTitle">🛒 Panye</h3>
+    <div id="cartList"></div>
+    <div id="cartTotalRow" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid #e0e4ea;font-weight:800;font-size:16px;color:var(--blue-dark);display:flex;justify-content:space-between;"></div>
+  </div>
+</div>
+
+<!-- UPDATES MODAL -->
+<div class="overlay" id="updatesOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('updatesOverlay')">✕</button>
+    <h3 id="updatesTitle">🔄 Mizajou Disponib</h3>
+    <div id="updatesList"></div>
+  </div>
+</div>
+
+<!-- PAYMENT METHODS MODAL (horizontal cards) -->
+<div class="overlay" id="payMethodsOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('payMethodsOverlay')">✕</button>
+    <h3 id="payMethodsTitle">💳 Mwayen Peman</h3>
+    <div id="payMethodsRow" style="display:flex;gap:12px;overflow-x:auto;padding:8px 2px 12px;-webkit-overflow-scrolling:touch;"></div>
   </div>
 </div>
 
@@ -271,7 +337,7 @@
 <!-- ADMIN PANEL (FULL SCREEN) -->
 <div class="admin-fullscreen" id="adminPanelView">
   <div class="admin-topbar">
-    <button class="back-btn" id="adminBackBtn" onclick="adminGoMenu()" style="display:none;">◀</button>
+    <button class="back-btn" id="adminBackBtn" onclick="adminSectionBack()" style="display:none;">◀</button>
     <div class="admin-title" id="adminTitle">Panel Administrasyon Wing</div>
     <div class="admin-fb-status" id="fbStatusAdmin" title="Estati Firebase"><span class="fb-dot checking" id="fbDotAdmin"></span><span id="fbTextAdmin">...</span></div>
     <button class="admin-close" onclick="closeAdminPanel()">✕</button>
@@ -292,6 +358,9 @@
     <textarea id="f_desc"></textarea>
     <label id="lbl_icon">Ikòn APK</label>
     <input type="file" id="f_icon" accept="image/*">
+    <label id="lbl_screenshots">Foto Egzanp / Screenshot (maksimòm 3)</label>
+    <input type="file" id="f_screenshots" accept="image/*" multiple onchange="handleScreenshotFiles(this.files)">
+    <div id="ssPreviewRow" style="display:flex;gap:8px;margin:6px 0 4px;flex-wrap:wrap;"></div>
     <label id="lbl_apkfile">Fichye APK (.apk)</label>
     <input type="text" id="f_apk" placeholder="https://github.com/.../releases/download/.../App.apk">
     <p class="small-note" id="apkLinkNote"></p>
@@ -310,6 +379,61 @@
     </div>
     <button class="btn btn-primary" id="saveApkBtn" onclick="saveApk()">Anrejistre</button>
     <input type="hidden" id="f_id">
+  </div>
+</div>
+
+<!-- AD EDIT MODAL (Admin) -->
+<div class="overlay" id="adEditOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeModal('adEditOverlay')">✕</button>
+    <h3 id="adEditTitle">➕ Ajoute Pub</h3>
+    <label>Kalite Pub</label>
+    <select id="ad_category" onchange="toggleAdFields()">
+      <option value="link">🔗 Lyen (Videyo/Jwèt/Sit)</option>
+      <option value="business">🏪 Biznis (Foto + Tit)</option>
+    </select>
+    <label>Tit</label>
+    <input id="ad_title" placeholder="Tit pub la">
+    <label>Deskripsyon (opsyonèl)</label>
+    <textarea id="ad_desc"></textarea>
+    <label>Foto/Imaj (otomatikman konprese)</label>
+    <input type="file" id="ad_image" accept="image/*">
+    <div id="ad_img_preview" style="margin:6px 0;"></div>
+    <div id="ad_link_row">
+      <label>Lyen (URL konplè: YouTube, TikTok, jwèt, sit, elatriye)</label>
+      <input id="ad_link" placeholder="https://...">
+    </div>
+    <div id="ad_action_row" style="display:none;">
+      <label>Aksyon lè moun wè/klike pub la</label>
+      <select id="ad_actiontype" onchange="toggleAdFields()">
+        <option value="link">Ouvri yon Lyen</option>
+        <option value="whatsapp">Ouvri WhatsApp</option>
+        <option value="timer">Sèlman Afiche (san klik), pou X segond</option>
+      </select>
+    </div>
+    <div id="ad_whatsapp_row" style="display:none;">
+      <label>Nimewo WhatsApp (ak kòd peyi, egz: 50937123456)</label>
+      <input id="ad_whatsapp" placeholder="50937123456">
+    </div>
+    <div id="ad_seconds_row" style="display:none;">
+      <label>Konbyen segond pou afiche l</label>
+      <input id="ad_seconds" type="number" min="1" value="4">
+    </div>
+    <label>Konbyen fwa maksimòm pub la ka afiche total (kite vid = san limit)</label>
+    <input id="ad_maxshows" type="number" min="0" placeholder="egz: 200">
+    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;">
+      <input type="checkbox" id="ad_active" style="width:auto;" checked> Pub la Aktif
+    </label>
+    <button class="btn btn-primary" onclick="saveAd()">Anrejistre</button>
+    <input type="hidden" id="ad_id">
+  </div>
+</div>
+
+<!-- AD DISPLAY MODAL (afiche pandan telechajman gratis) -->
+<div class="overlay" id="adShowOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeAdModal()">✕</button>
+    <div id="adShowBody" style="text-align:center;"></div>
   </div>
 </div>
 
@@ -333,6 +457,12 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
   const auth = firebase.auth();
+  /* Kenbe done yo lokalman sou aparèy la (IndexedDB) pou app la ka kontinye
+     mache menm si rezo a tonbe — l ap sèvi ak dènye done ki te anrejistre a
+     jiskaske rezo a retounen, epi l ap resenkronize otomatikman. */
+  db.enablePersistence({synchronizeTabs:true}).catch(function(err){
+    console.warn('Firestore offline persistence pa t ka aktive:', err.code);
+  });
 
   /* ── Dezyèm app Firebase: konekte ak AyiPay pou peman ak balans reyèl ── */
   const ayipayConfig = {
@@ -346,6 +476,10 @@
   const ayipayApp = firebase.initializeApp(ayipayConfig, 'ayipayApp');
   const ayipayDb = ayipayApp.firestore();
   const ayipayAuth = ayipayApp.auth();
+  /* Twazyèm app separe pou kont kolektè admin lan, pou l pa deranje sesyon achtè a */
+  const ayipayAdminApp = firebase.initializeApp(ayipayConfig, 'ayipayAdminApp');
+  const ayipayAdminDb = ayipayAdminApp.firestore();
+  const ayipayAdminAuth = ayipayAdminApp.auth();
 
 </script>
 
@@ -366,9 +500,10 @@ const I18N = {
     choosePayment:'💳 Chwazi Metòd Peman', paypalIntl:'PayPal (Entènasyonal)', confirmPayBtn:'Konfime Peman',
     notifTitle:'🔔 Notifikasyon',
     myDlTitle:'📥 Telechajman Mwen', myDlEmpty:'Ou poko telechaje okenn APK.', myDlAgain:'Telechaje Ankò',
+    installBtn:'📲 Enstale', uninstallBtn:'🗑️ Dezenstale', removeBtn:'Siprime nan Lis',
     adminLoginTitle:'🔒 Aksè Admin - Sekisyon Kache', adminLoginLabel:'Antre Kòd Sekrè:', adminLoginNote:'Aksè sèlman pou ADMINISTRATÈ.',
     adminMainTitle:'Panel Administrasyon Wing',
-    menuManage:'📦 Jere APK yo', menuPromo:'📢 Mizajou & Pwomosyon', menuPayments:'💵 Konfigirasyon Peman',
+    menuManage:'📦 Jere APK yo', menuPromo:'📢 Mizajou & Pwomosyon', menuAds:'🎯 Pub / Reklam', menuPayments:'💵 Konfigirasyon Peman',
     menuUsers:'👥 Jesyon Itilizatè', menuStats:'📊 Estatistik & Rapò', menuConfig:'⚙️ Konfigirasyon Sekirite',
     addApk:'➕ Ajoute Nouvo APK', noApk:'Poko gen APK.', edit:'Modifye', del:'Efase',
     promoBannerLbl:'Tèks Bannyè Pwomosyon', announceTxtLbl:'Tèks Anons Aktyèl', savePromo:'Anrejistre Pwomosyon',
@@ -425,9 +560,10 @@ const I18N = {
     choosePayment:'💳 Choisir un Moyen de Paiement', paypalIntl:'PayPal (International)', confirmPayBtn:'Confirmer le Paiement',
     notifTitle:'🔔 Notifications',
     myDlTitle:'📥 Mes Téléchargements', myDlEmpty:'Vous n\'avez encore téléchargé aucun APK.', myDlAgain:'Télécharger à nouveau',
+    installBtn:'📲 Installer', uninstallBtn:'🗑️ Désinstaller', removeBtn:'Retirer de la liste',
     adminLoginTitle:'🔒 Accès Admin - Section Cachée', adminLoginLabel:'Entrer le Code Secret :', adminLoginNote:'Accès réservé à l\'ADMINISTRATEUR.',
     adminMainTitle:'Panneau Administration Wing',
-    menuManage:'📦 Gérer les APK', menuPromo:'📢 Mises à jour & Promotion', menuPayments:'💵 Configuration Paiement',
+    menuManage:'📦 Gérer les APK', menuPromo:'📢 Mises à jour & Promotion', menuAds:'🎯 Pubs & Réclames', menuPayments:'💵 Configuration Paiement',
     menuUsers:'👥 Gestion Utilisateurs', menuStats:'📊 Statistiques & Rapport', menuConfig:'⚙️ Configuration Sécurité',
     addApk:'➕ Ajouter un Nouvel APK', noApk:'Aucun APK pour l\'instant.', edit:'Modifier', del:'Supprimer',
     promoBannerLbl:'Texte de la Bannière Promo', announceTxtLbl:'Texte de l\'Annonce Actuelle', savePromo:'Enregistrer la Promotion',
@@ -474,6 +610,17 @@ const I18N = {
 let LANG = localStorage.getItem('wing_lang') || 'ht';
 function t(key){ return (I18N[LANG] && I18N[LANG][key]) || (I18N.ht[key]) || key; }
 function toggleLang(){ LANG = (LANG==='ht') ? 'fr' : 'ht'; localStorage.setItem('wing_lang', LANG); applyLang(); renderAll(); if(document.getElementById('profileOverlay').classList.contains('show')) renderProfileOverlay(); }
+function applyDesktopMode(isDesktop){
+  const meta = document.querySelector('meta[name="viewport"]');
+  document.body.classList.toggle('desktop-mode', isDesktop);
+  if(isDesktop){ meta.setAttribute('content','width=1200'); }
+  else { meta.setAttribute('content','width=device-width, initial-scale=1.0, maximum-scale=1.0'); }
+}
+function autoDetectDesktopMode(){
+  const isDesktop = window.innerWidth >= 900;
+  applyDesktopMode(isDesktop);
+}
+window.addEventListener('resize', autoDetectDesktopMode);
 function applyLang(){
   document.getElementById('langBtn').textContent = (LANG==='ht') ? 'FR' : 'HT';
   document.querySelectorAll('[data-i18n]').forEach(el=>{
@@ -513,7 +660,7 @@ const CAT_KEYS = ['jwet','edikasyon','biznis','mizik'];
 function catLabel(key){ return t('cat'+key.charAt(0).toUpperCase()+key.slice(1)); }
 
 const ADMIN_EMAIL = 'admin@wing-app.internal';
-const DEFAULT_SETTINGS = {promoText:'Anons Mizajou & Pwomosyon / Mises à jour & Promotions', announceText:'Nouvo Mizajou Disponib! Telechaje dènye vèsyon kounye a!', pay:{moncash:'',natcash:'',ayipay:'',paypal:''}};
+const DEFAULT_SETTINGS = {promoText:'Anons Mizajou & Pwomosyon / Mises à jour & Promotions', announceText:'Nouvo Mizajou Disponib! Telechaje dènye vèsyon kounye a!', pay:{moncash:'',natcash:'',ayipay:'',paypal:''}, paymentsLocked:false, ayipayCollector:{email:'',pass:''}};
 const DEFAULT_APKS = [
   {name:'Wing Play',cat:'jwet',desc:'',rating:4.5,price:0,icon:'',apkData:'',downloads:32},
   {name:'Wing Kids Edu',cat:'edikasyon',desc:'',rating:4.0,price:500,icon:'',apkData:'',downloads:15},
@@ -521,6 +668,7 @@ const DEFAULT_APKS = [
 ];
 
 let apks = [];
+let ads = [];
 let settings = Object.assign({}, DEFAULT_SETTINGS);
 let currentFilter = 'all';
 let currentCat = null;
@@ -547,7 +695,7 @@ function resizeImageToDataURL(file, maxDim, quality, cb){
 /* ================= FIREBASE CONNECTION STATUS ================= */
 function setFbStatus(state){
   // state: 'checking' | 'online' | 'offline'
-  const labels = {checking:(LANG==='fr'?'Vérification...':'Verifikasyon...'), online:(LANG==='fr'?'Connecté':'Konekte'), offline:(LANG==='fr'?'Déconnecté':'Dekonekte')};
+  const labels = {checking:(LANG==='fr'?'Vérification...':'Verifikasyon...'), online:(LANG==='fr'?'Connecté':'Konekte'), offline:(LANG==='fr'?'Mode Local':'Mòd Lokal')};
   [['fbDotHeader','fbTextHeader'],['fbDotAdmin','fbTextAdmin']].forEach(([dotId,txtId])=>{
     const dot = document.getElementById(dotId), txt = document.getElementById(txtId);
     if(dot){ dot.classList.remove('checking','online','offline'); dot.classList.add(state); }
@@ -577,13 +725,24 @@ db.collection('settings').doc('global').onSnapshot(async function(docSnap){
   setFbStatus(docSnap.metadata.fromCache ? 'offline' : 'online');
   if(!docSnap.exists){ await db.collection('settings').doc('global').set(DEFAULT_SETTINGS); return; }
   const data = docSnap.data();
-  settings = Object.assign({}, DEFAULT_SETTINGS, data, {pay:Object.assign({moncash:'',natcash:'',ayipay:'',paypal:''}, data.pay||{})});
+  settings = Object.assign({}, DEFAULT_SETTINGS, data, {pay:Object.assign({moncash:'',natcash:'',ayipay:'',paypal:''}, data.pay||{}), ayipayCollector:Object.assign({email:'',pass:''}, data.ayipayCollector||{})});
   renderAll();
 }, function(err){ setFbStatus('offline'); toast('Firestore (settings): '+err.message); });
 
+/* Real-time pub (ads) — koleksyon separe, konte kòm lekti/ekri minim sou plan gratis Firebase */
+db.collection('ads').onSnapshot(function(snap){
+  ads = snap.docs.map(d=>Object.assign({id:d.id}, d.data()));
+  refreshAdminIfAds();
+}, function(err){ /* si pub pa disponib, telechajman kontinye san pub, pa gen erè blokan */ });
+
+function refreshAdminIfAds(){
+  const titleEl = document.getElementById('adminTitle');
+  if(titleEl && document.getElementById('adminPanelView').classList.contains('show') && titleEl.textContent===t('menuAds')) showAdminSection('ads', false);
+}
+
 function refreshAdminIfManage(){
   const titleEl = document.getElementById('adminTitle');
-  if(titleEl && document.getElementById('adminPanelView').classList.contains('show') && titleEl.textContent===t('menuManage')) showAdminSection('manage');
+  if(titleEl && document.getElementById('adminPanelView').classList.contains('show') && titleEl.textContent===t('menuManage')) showAdminSection('manage', false);
 }
 
 /* ================= AUTH (Firebase Authentication) ================= */
@@ -606,8 +765,9 @@ function getCurrentUser(){ return currentUserProfile; }
 function updateHeaderProfileIcon(){
   const icon = document.getElementById('headerProfileIcon');
   const u = getCurrentUser();
+  if(auth.currentUser && auth.currentUser.email === ADMIN_EMAIL){ icon.innerHTML = '👑'; return; }
   if(u && u.photo){ icon.innerHTML = `<img class="avatar-mini" src="${u.photo}">`; }
-  else if(u){ icon.textContent = (u.firstName||'?').charAt(0).toUpperCase(); }
+  else if(u && u.firstName){ icon.textContent = u.firstName.charAt(0).toUpperCase(); }
   else { icon.innerHTML = '👤'; }
 }
 
@@ -624,7 +784,7 @@ function renderProfileOverlay(){
   if(profileMode==='view' && u){
     const purchased = apks.filter(a=> (u.purchases||[]).includes(a.id));
     body.innerHTML = `
-      <div class="avatar-circle">${u.photo?`<img src="${u.photo}">`:(u.firstName||'?').charAt(0).toUpperCase()}</div>
+      <div class="avatar-circle">${u.photo?`<img src="${u.photo}">`:(u.firstName?u.firstName.charAt(0).toUpperCase():'👤')}</div>
       <div class="profile-name">${u.firstName} ${u.lastName}</div>
       <div class="profile-sub">${LANG==='fr'?'Membre Wing':'Manm Wing'}</div>
       <label>${t('myPurchases')}</label>
@@ -720,7 +880,10 @@ function renderTop(){
 function renderApkList(){
   const grid = document.getElementById('apkGrid');
   const list = apks.filter(matchesFilter);
-  grid.innerHTML = list.length ? list.map(a=>apkCardHTML(a)).join('') : `<p class="empty-note" style="grid-column:1/-1;">${t('noResults')}</p>`;
+  grid.innerHTML = list.length ? list.map(a=>apkCardHTML(a)).join('') : `<div style="grid-column:1/-1;text-align:center;padding:20px 0;">
+    <p class="empty-note">${t('noResults')}</p>
+    <button class="btn btn-o" onclick="openRequestApk()" style="margin-top:10px;">${LANG==='fr'?'✉️ Demander cet APK':'✉️ Mande APK sa a'}</button>
+  </div>`;
 }
 function renderCats(){
   document.getElementById('catGrid').innerHTML = CAT_KEYS.map(c=>`<div class="cat-chip ${currentCat===c?'active':''}" onclick="toggleCat('${c}')">${catLabel(c)}</div>`).join('');
@@ -737,9 +900,60 @@ function renderAll(){
   renderTop(); renderCats(); renderApkList();
 }
 
+/* ================= BOUTON RETOU (BACK) — SISTÈM NAVIGASYON ================= */
+/* Sa a fè bouton "retou" telefòn nan (ni sou sit wèb la, ni nan app Wing lan)
+   retounen sou aksyon/ekran ki te louvri anvan an, olye pou l fèmen/kite app
+   la nèt. Chak fwa yon modal, panel admin, seksyon admin, oswa lightbox
+   louvri, nou anrejistre yon "etap" nan istwa navigatè a (history.pushState).
+   Lè moun nan peze retou (oswa nou fèmen yon bagay ak yon bouton ✕/Anile),
+   nou senkronize pil navigasyon nou an (navStack) ak istwa a. */
+let navStack = [];
+let pendingProgrammaticBacks = 0;
+
+function pushNavState(entry){
+  navStack.push(entry);
+  history.pushState({wingNavLen: navStack.length}, '', location.href);
+}
+/* Fèmen pwogramatikman (ak yon bouton ✕/Anile/Sove) jiskaske pil la gen
+   'targetLen' eleman ladan. Sa a kenbe istwa navigatè a senkwonize. */
+function closeNavTo(targetLen){
+  const stepsBack = navStack.length - targetLen;
+  if(stepsBack<=0) return;
+  navStack.length = targetLen;
+  pendingProgrammaticBacks++;
+  history.go(-stepsBack);
+}
+window.addEventListener('popstate', function(){
+  if(pendingProgrammaticBacks>0){ pendingProgrammaticBacks--; return; }
+  if(!navStack.length) return; /* Wing pa t ap jere anyen — kite konpòtman default la (kite paj/app la) */
+  const entry = navStack.pop();
+  hideNavEntry(entry);
+});
+function hideNavEntry(entry){
+  if(!entry) return;
+  if(entry.type==='modal'){ const el=document.getElementById(entry.id); if(el) el.classList.remove('show'); }
+  else if(entry.type==='lightbox'){ hideScreenshotLightboxNow(); }
+  else if(entry.type==='adminSection'){ adminGoMenu(); }
+  else if(entry.type==='admin'){ document.getElementById('adminPanelView').classList.remove('show'); }
+  else if(entry.type==='ad'){ finishAd(); }
+}
+/* Pon ak bouton retou fizik la nan app Android la (si l anvlope ak Capacitor) */
+if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App){
+  window.Capacitor.Plugins.App.addListener('backButton', function(ev){
+    if(navStack.length || (ev && ev.canGoBack)){ history.back(); }
+    else { window.Capacitor.Plugins.App.exitApp(); }
+  });
+}
+
 /* ================= MODALS / TOAST ================= */
-function closeModal(id){ document.getElementById(id).classList.remove('show'); }
-function openModal(id){ document.getElementById(id).classList.add('show'); }
+function closeModal(id){
+  const el = document.getElementById(id);
+  if(!el || !el.classList.contains('show')) return;
+  el.classList.remove('show');
+  const idx = navStack.length-1;
+  if(idx>=0 && navStack[idx].type==='modal' && navStack[idx].id===id){ closeNavTo(idx); }
+}
+function openModal(id){ document.getElementById(id).classList.add('show'); pushNavState({type:'modal', id}); }
 function toast(msg){
   const el = document.getElementById('toastBox');
   el.textContent = msg; el.classList.add('show');
@@ -771,12 +985,100 @@ function recordDownload(a, localUri){
     saveGuestDownloads(list);
   }
 }
+function openRequestApk(){
+  document.getElementById('reqApkDesc').value='';
+  document.getElementById('reqApkContact').value='';
+  openModal('requestApkOverlay');
+}
+function submitApkRequest(){
+  const desc = document.getElementById('reqApkDesc').value.trim();
+  const contact = document.getElementById('reqApkContact').value.trim();
+  if(!desc){ toast(LANG==='fr'?'Décrivez l\'APK que vous cherchez':'Dekri APK w ap chèche a'); return; }
+  const btn = document.getElementById('reqApkBtn');
+  btn.disabled = true;
+  const u = getCurrentUser();
+  db.collection('apk_requests').add({
+    desc: desc, contact: contact,
+    buyer: u ? (u.email||u.uid) : (LANG==='fr'?'Invité':'Envite'),
+    date: Date.now(), status: 'pending'
+  }).then(function(){
+    toast(LANG==='fr'?'✅ Demande envoyée ! Admin vous contactera bientôt.':'✅ Demand voye! Admin ap kontakte w byento.');
+    closeModal('requestApkOverlay');
+  }).catch(function(err){ toast('Firestore: '+err.message); })
+    .finally(function(){ btn.disabled = false; });
+}
+
+/* ================= PANYE (CART) ================= */
+function loadCart(){ try{ return JSON.parse(localStorage.getItem('wing_cart')||'[]'); }catch(e){ return []; } }
+function saveCart(cart){ try{ localStorage.setItem('wing_cart', JSON.stringify(cart)); }catch(e){} updateCartBadge(); }
+function updateCartBadge(){
+  const cart = loadCart();
+  const badge = document.getElementById('cartBadge');
+  if(!badge) return;
+  if(cart.length>0){ badge.style.display='inline-block'; badge.textContent=cart.length; }
+  else { badge.style.display='none'; }
+}
+function addToCart(id){
+  if(!id) return;
+  const a = apks.find(x=>x.id===id); if(!a) return;
+  if(ownsApk(id)){ toast(t('alreadyOwned')); return; }
+  let cart = loadCart();
+  if(cart.includes(id)){ toast(LANG==='fr'?'Déjà dans le panier':'Deja nan panye a'); return; }
+  cart.push(id); saveCart(cart);
+  toast(LANG==='fr'?'Ajouté au panier':'Ajoute nan panye a');
+}
+function removeFromCart(id){
+  let cart = loadCart().filter(x=>x!==id);
+  saveCart(cart);
+  renderCart();
+}
+function openCart(){ renderCart(); openModal('cartOverlay'); }
+function renderCart(){
+  const cart = loadCart().filter(id=>apks.find(a=>a.id===id) && !ownsApk(id));
+  saveCart(cart);
+  const list = document.getElementById('cartList');
+  const totalRow = document.getElementById('cartTotalRow');
+  if(!cart.length){
+    list.innerHTML = `<p class="empty-note">${t('cartEmpty')}</p>`;
+    totalRow.style.display='none';
+    return;
+  }
+  let total = 0;
+  list.innerHTML = cart.map(id=>{
+    const a = apks.find(x=>x.id===id);
+    total += a.price||0;
+    const iconHTML = a.icon ? `<img src="${a.icon}">` : '📱';
+    return `<div class="apk-admin-row">
+      <div class="thumb">${iconHTML}</div>
+      <div class="meta"><div class="n">${a.name}</div><div class="d">${fmtPrice(a.price)}</div></div>
+      <button class="mini-btn" style="background:var(--blue-light);color:var(--blue-dark);" onclick="openPayment('${id}')">${LANG==='fr'?'Payer':'Peye'}</button>
+      <button class="mini-btn btn-danger" onclick="removeFromCart('${id}')">${LANG==='fr'?'Retirer':'Retire'}</button>
+    </div>`;
+  }).join('');
+  totalRow.style.display='flex';
+  totalRow.innerHTML = `<span>${LANG==='fr'?'Total':'Total'}</span><span>${total.toLocaleString()} HTG</span>`;
+}
+
+function removeFromDownloads(idx){
+  const u = getCurrentUser();
+  if(u){
+    let list = (u.downloads||[]).slice();
+    list.splice(idx,1);
+    u.downloads = list;
+    db.collection('users').doc(u.uid).update({downloads:list}).catch(function(err){ toast('Firestore: '+err.message); });
+  } else {
+    let list = loadGuestDownloads();
+    list.splice(idx,1);
+    saveGuestDownloads(list);
+  }
+  openMyDownloads();
+}
 function openMyDownloads(){
   const u = getCurrentUser();
   const list = u ? (u.downloads||[]) : loadGuestDownloads();
   const body = document.getElementById('myDlList');
   if(!list.length){ body.innerHTML = `<p class="empty-note">${t('myDlEmpty')}</p>`; openModal('myDlOverlay'); return; }
-  body.innerHTML = list.map(d=>{
+  body.innerHTML = list.map((d,idx)=>{
     const dt = new Date(d.date);
     const dstr = dt.toLocaleDateString(LANG==='fr'?'fr-FR':'fr-HT', {day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + dt.toLocaleTimeString(LANG==='fr'?'fr-FR':'fr-HT',{hour:'2-digit',minute:'2-digit'});
     const iconHTML = d.icon ? `<img src="${d.icon}">` : '📱';
@@ -788,6 +1090,7 @@ function openMyDownloads(){
       <div class="meta"><div class="n">${d.name}</div><div class="d">${dstr} • ${fmtPrice(d.price)}</div></div>
       <button class="mini-btn" style="background:var(--blue-light);color:var(--blue-dark);" onclick="doDownload('${d.id}')">${t('myDlAgain')}</button>
       ${nativeBtns}
+      <button class="mini-btn" style="background:#eee;color:#667;" onclick="removeFromDownloads(${idx})">${t('removeBtn')}</button>
     </div>`;
   }).join('');
   openModal('myDlOverlay');
@@ -800,8 +1103,18 @@ function openDetail(id){
   document.getElementById('detailName').textContent = a.name;
   document.getElementById('detailMeta').textContent = `${catLabel(a.cat)} • ⭐ ${a.rating} • ${fmtPrice(a.price)} • ${a.downloads} ${LANG==='fr'?'téléchargements':'telechajman'}${a.version?' • v'+a.version:''}${a.size?' • '+a.size:''}`;
   document.getElementById('detailDesc').textContent = a.desc || '';
+  const ssWrap = document.getElementById('detailScreenshots');
+  if(a.screenshots && a.screenshots.length){
+    ssWrap.style.display = 'flex';
+    ssWrap.innerHTML = a.screenshots.map(s=>`<img src="${s}" onclick="openScreenshotLightbox('${s}')">`).join('');
+  } else {
+    ssWrap.style.display = 'none';
+    ssWrap.innerHTML = '';
+  }
   const btn = document.getElementById('detailActionBtn');
+  const cartBtn = document.getElementById('detailCartBtn');
   const owned = a.price>0 && ownsApk(id);
+  cartBtn.style.display = (a.price>0 && !owned) ? 'block' : 'none';
   if(owned){
     document.getElementById('detailDesc').textContent = (a.desc?a.desc+' ':'') + t('alreadyOwned');
     btn.textContent = LANG==='fr'?'Télécharger Maintenant':'Telechaje Kounye a';
@@ -813,6 +1126,21 @@ function openDetail(id){
   openModal('detailOverlay');
 }
 
+function openScreenshotLightbox(src){
+  document.getElementById('ssLightboxImg').src = src;
+  document.getElementById('ssLightboxOverlay').classList.add('show');
+  pushNavState({type:'lightbox'});
+}
+function hideScreenshotLightboxNow(){
+  document.getElementById('ssLightboxOverlay').classList.remove('show');
+  document.getElementById('ssLightboxImg').src = '';
+}
+function closeScreenshotLightbox(){
+  if(!document.getElementById('ssLightboxOverlay').classList.contains('show')) return;
+  hideScreenshotLightboxNow();
+  const idx = navStack.length-1;
+  if(idx>=0 && navStack[idx].type==='lightbox'){ closeNavTo(idx); }
+}
 function isNativeApp(){
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 }
@@ -849,6 +1177,15 @@ function uninstallApk(pkg){
 function doDownload(id){
   const a = apks.find(x=>x.id===id); if(!a) return;
   db.collection('apks').doc(id).update({downloads: (a.downloads||0)+1}).catch(function(err){ toast('Firestore: '+err.message); });
+  closeModal('detailOverlay');
+  if(a.price===0){
+    /* Telechajman gratis: montre yon pub (si genyen) anvan telechajman an kòmanse */
+    maybeShowAd(function(){ proceedDownload(a); });
+  } else {
+    proceedDownload(a);
+  }
+}
+function proceedDownload(a){
   if(isNativeApp() && a.apkData && !a.apkData.startsWith('data:')){
     /* running inside the packaged Android app: download to device storage and open the system installer directly, without leaving Wing */
     doDownloadNative(a);
@@ -869,7 +1206,142 @@ function doDownload(id){
   } else {
     toast(t('dlMissing'));
   }
-  closeModal('detailOverlay');
+}
+
+/* ================= PUB / REKLAM (Ads) ================= */
+let _pendingAdCb = null, _adTimerHandle = null;
+function maybeShowAd(cb){
+  const pool = (ads||[]).filter(x=> x.active!==false && (!x.maxShows || (x.shownCount||0) < x.maxShows));
+  if(!pool.length){ cb(); return; }
+  const ad = pool[Math.floor(Math.random()*pool.length)];
+  showAdModal(ad, cb);
+}
+function showAdModal(ad, cb){
+  _pendingAdCb = cb;
+  window._currentAd = ad;
+  const box = document.getElementById('adShowBody');
+  const imgHtml = ad.imageUrl ? `<img src="${ad.imageUrl}" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:10px;">` : '';
+  let actionHtml = '';
+  if(ad.category==='link'){
+    actionHtml = `<button class="btn btn-primary" onclick="adActionClick()">${LANG==='fr'?'▶️ Regarder':'▶️ Gade'}</button>`;
+  } else if(ad.actionType==='link'){
+    actionHtml = `<button class="btn btn-primary" onclick="adActionClick()">${LANG==='fr'?'Visiter':'Vizite'}</button>`;
+  } else if(ad.actionType==='whatsapp'){
+    actionHtml = `<button class="btn btn-primary" style="background:#25D366;" onclick="adActionClick()">💬 WhatsApp</button>`;
+  } else {
+    actionHtml = `<p class="small-note" id="adCountdownNote" style="text-align:center;margin-top:10px;"></p>`;
+  }
+  box.innerHTML = `${imgHtml}<div style="font-size:9px;font-weight:700;color:var(--gray);letter-spacing:.5px;margin-bottom:4px;">${LANG==='fr'?'PUBLICITÉ':'PIBLISITE'}</div>
+    <h3 style="margin-bottom:6px;">${ad.title||''}</h3>
+    <p class="small-note" style="margin-bottom:10px;">${ad.desc||''}</p>${actionHtml}`;
+  document.getElementById('adShowOverlay').classList.add('show');
+  pushNavState({type:'ad'});
+  bumpAdShown(ad.id);
+  if(!(ad.category==='link') && ad.actionType==='timer'){
+    let secs = ad.displaySeconds || 4;
+    const tick = ()=>{
+      const note = document.getElementById('adCountdownNote');
+      if(secs<=0){ clearInterval(_adTimerHandle); closeAdModal(); return; }
+      if(note) note.textContent = (LANG==='fr'?`Continuation dans ${secs}s...`:`W ap kontinye nan ${secs}s...`);
+      secs--;
+    };
+    tick();
+    _adTimerHandle = setInterval(tick, 1000);
+  }
+}
+function adActionClick(){
+  const ad = window._currentAd; if(!ad) return;
+  if(ad.category==='link' && ad.link){ window.open(ad.link, '_blank', 'noopener'); }
+  else if(ad.actionType==='link' && ad.link){ window.open(ad.link, '_blank', 'noopener'); }
+  else if(ad.actionType==='whatsapp' && ad.whatsapp){ window.open('https://wa.me/'+ad.whatsapp.replace(/[^0-9]/g,''), '_blank', 'noopener'); }
+  closeAdModal();
+}
+/* Rele lè moun peze ✕, peze bouton aksyon an, oswa lè kontè a fini — fèmen l ak men, epi senkwonize istwa/navigasyon an */
+function closeAdModal(){
+  finishAd();
+  const idx = navStack.length-1;
+  if(idx>=0 && navStack[idx].type==='ad'){ closeNavTo(idx); }
+}
+/* Netwayaj reyèl la (rele swa pa closeAdModal, swa pa hideNavEntry si moun peze bouton tounen fizik la) */
+function finishAd(){
+  if(_adTimerHandle){ clearInterval(_adTimerHandle); _adTimerHandle=null; }
+  const overlay = document.getElementById('adShowOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const cb = _pendingAdCb; _pendingAdCb = null; window._currentAd = null;
+  if(cb) cb();
+}
+function bumpAdShown(id){
+  db.collection('ads').doc(id).update({shownCount: firebase.firestore.FieldValue.increment(1)}).catch(function(){});
+}
+function toggleAdFields(){
+  const cat = document.getElementById('ad_category').value;
+  const actionRow = document.getElementById('ad_action_row');
+  const linkRow = document.getElementById('ad_link_row');
+  const waRow = document.getElementById('ad_whatsapp_row');
+  const secRow = document.getElementById('ad_seconds_row');
+  if(cat==='link'){
+    actionRow.style.display='none'; linkRow.style.display='block'; waRow.style.display='none'; secRow.style.display='none';
+    return;
+  }
+  actionRow.style.display='block';
+  const at = document.getElementById('ad_actiontype').value;
+  linkRow.style.display = at==='link' ? 'block':'none';
+  waRow.style.display = at==='whatsapp' ? 'block':'none';
+  secRow.style.display = at==='timer' ? 'block':'none';
+}
+function openAdEdit(id){
+  if(!requireAuthOrPrompt()) return;
+  const a = id ? ads.find(x=>x.id===id) : null;
+  document.getElementById('adEditTitle').textContent = a ? (LANG==='fr'?'✏️ Modifier la Pub':'✏️ Modifye Pub la') : (LANG==='fr'?'➕ Ajouter une Pub':'➕ Ajoute yon Pub');
+  document.getElementById('ad_id').value = a ? a.id : '';
+  document.getElementById('ad_category').value = a ? a.category : 'link';
+  document.getElementById('ad_title').value = a ? (a.title||'') : '';
+  document.getElementById('ad_desc').value = a ? (a.desc||'') : '';
+  document.getElementById('ad_link').value = a ? (a.link||'') : '';
+  document.getElementById('ad_actiontype').value = a ? (a.actionType||'link') : 'link';
+  document.getElementById('ad_whatsapp').value = a ? (a.whatsapp||'') : '';
+  document.getElementById('ad_seconds').value = a ? (a.displaySeconds||4) : 4;
+  document.getElementById('ad_maxshows').value = a && a.maxShows ? a.maxShows : '';
+  document.getElementById('ad_active').checked = a ? (a.active!==false) : true;
+  document.getElementById('ad_image').value = '';
+  window._editAdImage = a ? (a.imageUrl||'') : '';
+  document.getElementById('ad_img_preview').innerHTML = window._editAdImage ? `<img src="${window._editAdImage}" style="width:70px;height:70px;border-radius:8px;object-fit:cover;">` : '';
+  toggleAdFields();
+  openModal('adEditOverlay');
+}
+function saveAd(){
+  if(!requireAuthOrPrompt()) return;
+  const id = document.getElementById('ad_id').value || db.collection('ads').doc().id;
+  const category = document.getElementById('ad_category').value;
+  const title = document.getElementById('ad_title').value.trim();
+  if(!title){ toast(t('enterName')); return; }
+  const desc = document.getElementById('ad_desc').value.trim();
+  const link = document.getElementById('ad_link').value.trim();
+  const actionType = category==='business' ? document.getElementById('ad_actiontype').value : 'link';
+  const whatsapp = document.getElementById('ad_whatsapp').value.trim();
+  const displaySeconds = parseInt(document.getElementById('ad_seconds').value)||4;
+  const maxShowsRaw = document.getElementById('ad_maxshows').value.trim();
+  const maxShows = maxShowsRaw ? (parseInt(maxShowsRaw)||0) : 0;
+  const active = document.getElementById('ad_active').checked;
+  const imageFile = document.getElementById('ad_image').files[0];
+  function finish(imgData){
+    const existing = ads.find(x=>x.id===id);
+    const entry = {category, title, desc, link, actionType, whatsapp, displaySeconds, maxShows, active,
+      imageUrl: imgData!==undefined ? imgData : (window._editAdImage||''),
+      shownCount: existing ? (existing.shownCount||0) : 0};
+    db.collection('ads').doc(id).set(entry)
+      .then(function(){ closeModal('adEditOverlay'); showAdminSection('ads', false); toast(t('apkSaved')); })
+      .catch(function(err){ toast('Firestore: '+err.message); });
+  }
+  if(imageFile){ resizeImageToDataURL(imageFile, 480, 0.6, finish); }
+  else { finish(undefined); }
+}
+function deleteAd(id){
+  if(!requireAuthOrPrompt()) return;
+  if(!confirm(t('confirmDelete'))) return;
+  db.collection('ads').doc(id).delete()
+    .then(function(){ showAdminSection('ads', false); toast(t('apkDeleted')); })
+    .catch(function(err){ toast('Firestore: '+err.message); });
 }
 
 let pendingPayId=null, selectedPayMethod=null;
@@ -877,16 +1349,71 @@ function openPayment(id){
   pendingPayId=id; selectedPayMethod=null;
   document.querySelectorAll('.pay-opt').forEach(e=>e.classList.remove('selected'));
   document.getElementById('payNumberNote').style.display='none';
-  closeModal('detailOverlay'); openModal('payOverlay');
+  const detailEl = document.getElementById('detailOverlay'), cartEl = document.getElementById('cartOverlay');
+  const wasDetail = detailEl.classList.contains('show'), wasCart = cartEl.classList.contains('show');
+  detailEl.classList.remove('show'); cartEl.classList.remove('show');
+  document.getElementById('payOverlay').classList.add('show');
+  const idx = navStack.length-1;
+  if((wasDetail||wasCart) && idx>=0 && navStack[idx].type==='modal' && (navStack[idx].id==='detailOverlay' || navStack[idx].id==='cartOverlay')){
+    /* Ranplase antre istwa a olye pou n fè back+push nan menm moman an (sa ka pa fyab sou kèk navigatè) */
+    navStack[idx] = {type:'modal', id:'payOverlay'};
+    history.replaceState({wingNavLen: navStack.length}, '', location.href);
+  } else {
+    pushNavState({type:'modal', id:'payOverlay'});
+  }
 }
-function openPaymentSettings(){ toast(t('cardInfoToast')); }
+function openUpdatesModal(){
+  const updated = apks.filter(a=>a.lastUpdate && a.lastUpdate>0).sort((a,b)=>b.lastUpdate-a.lastUpdate);
+  const list = document.getElementById('updatesList');
+  if(!updated.length){
+    list.innerHTML = `<p class="empty-note">${LANG==='fr'?'Aucune mise à jour récente.':'Pa gen mizajou resan.'}</p>`;
+  } else {
+    list.innerHTML = updated.map(a=>{
+      const dt = new Date(a.lastUpdate);
+      const dstr = dt.toLocaleDateString(LANG==='fr'?'fr-FR':'fr-HT',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const iconHTML = a.icon ? `<img src="${a.icon}">` : '📱';
+      return `<div class="apk-admin-row" onclick="openApkDetail('${a.id}')" style="cursor:pointer;">
+        <div class="thumb">${iconHTML}</div>
+        <div class="meta"><div class="n">${a.name} ${a.version?'• v'+a.version:''}</div><div class="d">${LANG==='fr'?'Mis à jour le':'Mizajou le'} ${dstr}</div></div>
+      </div>`;
+    }).join('');
+  }
+  openModal('updatesOverlay');
+}
+function openPaymentSettings(){
+  const methods = [
+    {key:'moncash', label:'MonCash', color:'#e2231a', letter:'M'},
+    {key:'natcash', label:'NatCash', color:'#0057a6', letter:'N'},
+    {key:'ayipay', label:'AyiPay', color:'#0d2b52', letter:'A'},
+    {key:'paypal', label:'PayPal', color:'#003087', letter:'P'}
+  ];
+  const row = document.getElementById('payMethodsRow');
+  row.innerHTML = methods.map(m=>{
+    const num = settings.pay && settings.pay[m.key] ? settings.pay[m.key] : '';
+    const logo = settings.pay && settings.pay[m.key+'Logo'] ? settings.pay[m.key+'Logo'] : '';
+    const link = settings.pay && settings.pay[m.key+'Link'] ? settings.pay[m.key+'Link'] : '';
+    const visual = logo
+      ? `<img src="${logo}" style="width:56px;height:56px;border-radius:14px;object-fit:cover;margin:0 auto 10px;display:block;">`
+      : `<div style="width:56px;height:56px;border-radius:14px;background:${m.color};color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;">${m.letter}</div>`;
+    const clickAttr = link ? `onclick="window.open('${link}','_blank')" style="cursor:pointer;flex:0 0 150px;background:var(--bg-light,#f4f6fa);border-radius:16px;padding:16px 12px;text-align:center;"` : `style="flex:0 0 150px;background:var(--bg-light,#f4f6fa);border-radius:16px;padding:16px 12px;text-align:center;"`;
+    return `<div ${clickAttr}>
+      ${visual}
+      <div style="font-weight:800;color:var(--blue-dark);margin-bottom:4px;">${m.label}</div>
+      <div style="font-size:12px;color:#667;word-break:break-all;">${num || (LANG==='fr'?'Non configuré':'Poko konfigire')}</div>
+      ${link? `<div style="font-size:11px;color:var(--blue-dark);margin-top:4px;text-decoration:underline;">${LANG==='fr'?'Ouvrir':'Ouvri'} ↗</div>` : ''}
+    </div>`;
+  }).join('');
+  openModal('payMethodsOverlay');
+}
 function selectPay(el){
   document.querySelectorAll('.pay-opt').forEach(e=>e.classList.remove('selected'));
   el.classList.add('selected'); selectedPayMethod=el.dataset.m;
   const note = document.getElementById('payNumberNote');
   const ayipayBox = document.getElementById('ayipayLoginBox');
+  const refBox = document.getElementById('payRefBox');
   note.style.display='block';
   ayipayBox.style.display = (selectedPayMethod==='AyiPay') ? 'block' : 'none';
+  refBox.style.display = (selectedPayMethod==='AyiPay') ? 'none' : 'block';
   if(selectedPayMethod==='AyiPay'){
     note.textContent = LANG==='fr' ? 'Connectez-vous à votre compte AyiPay pour payer directement depuis votre solde.' : 'Konekte ak kont AyiPay ou pou peye dirèkteman ak balans ou.';
   } else if(selectedPayMethod==='PayPal'){
@@ -897,12 +1424,24 @@ function selectPay(el){
     note.textContent = num ? `${t('sendMoneyTo')} ${selectedPayMethod} ${LANG==='fr'?'au numéro':'nan nimewo'}: ${num}, ${t('thenClick')}` : `${selectedPayMethod} ${t('payGenericNC')}`;
   }
 }
+function logPurchase(method, apk, reference){
+  const u = getCurrentUser();
+  db.collection('purchases').add({
+    apkId: apk.id, apkName: apk.name, price: apk.price||0, method: method,
+    reference: reference || '', buyer: u ? (u.email||u.uid) : (LANG==='fr'?'Invité':'Envite'),
+    date: Date.now()
+  }).catch(function(err){ console.warn('logPurchase echwe:', err.message); });
+}
 async function confirmPay(){
   if(!selectedPayMethod){ toast(t('chooseMethod')); return; }
+  if(settings.paymentsLocked){ toast(LANG==='fr'?'🔒 Les paiements sont temporairement bloqués par l\'administrateur':'🔒 Peman yo bloke pou kounye a pa admin'); return; }
   if(selectedPayMethod === 'AyiPay'){
     await confirmPayWithAyiPay();
     return;
   }
+  const a = apks.find(x=>x.id===pendingPayId);
+  const reference = document.getElementById('payRefInput').value.trim();
+  if(a && a.price>0) logPurchase(selectedPayMethod, a, reference);
   const u = getCurrentUser();
   if(u && pendingPayId && !(u.purchases||[]).includes(pendingPayId)){
     const newPurchases = (u.purchases||[]).concat([pendingPayId]);
@@ -918,6 +1457,58 @@ async function confirmPay(){
   if(pendingPayId) doDownload(pendingPayId);
 }
 
+/* ═══ LIMIT TANTATIV PEMAN AYIPAY (3 tantativ mal = bloke 1èdtan) ═══ */
+function lockoutKey(email){ return email.toLowerCase().trim().replace(/[^a-z0-9@._-]/g,'_'); }
+async function checkPayLockout(email){
+  try{
+    const ref = db.collection('purchase_lockouts').doc(lockoutKey(email));
+    const snap = await ref.get();
+    if(snap.exists){
+      const data = snap.data();
+      if(data.lockedUntil && data.lockedUntil > Date.now()){
+        const minsLeft = Math.ceil((data.lockedUntil - Date.now())/60000);
+        return minsLeft;
+      }
+    }
+    return 0;
+  }catch(e){ return 0; }
+}
+async function recordPayFail(email){
+  try{
+    const ref = db.collection('purchase_lockouts').doc(lockoutKey(email));
+    const snap = await ref.get();
+    const data = snap.exists ? snap.data() : {failCount:0};
+    const newCount = (data.failCount||0) + 1;
+    if(newCount >= 3){
+      await ref.set({failCount:0, lockedUntil: Date.now() + 60*60*1000}, {merge:true});
+    } else {
+      await ref.set({failCount:newCount, lockedUntil:0}, {merge:true});
+    }
+  }catch(e){}
+}
+async function clearPayLockout(email){
+  try{ await db.collection('purchase_lockouts').doc(lockoutKey(email)).set({failCount:0, lockedUntil:0}, {merge:true}); }catch(e){}
+}
+
+async function creditAyipayCollector(amount){
+  try{
+    if(!settings.ayipayCollector || !settings.ayipayCollector.email || !settings.ayipayCollector.pass){
+      console.warn('Pa gen kont kolektè AyiPay konfigire nan admin — lajan an pa depoze okenn kote.');
+      return;
+    }
+    const cred = await ayipayAdminAuth.signInWithEmailAndPassword(settings.ayipayCollector.email, settings.ayipayCollector.pass);
+    const uid = cred.user.uid;
+    const walletRef = ayipayAdminDb.collection('wallets').doc(uid);
+    await ayipayAdminDb.runTransaction(async function(tx){
+      const snap = await tx.get(walletRef);
+      const bal = snap.exists ? (snap.data().balans||0) : 0;
+      tx.set(walletRef, { balans: bal + amount, updated: Date.now() }, { merge:true });
+    });
+  }catch(err){
+    console.warn('creditAyipayCollector echwe:', err && err.message);
+  }
+}
+
 async function confirmPayWithAyiPay(){
   const email = document.getElementById('ayipayEmailInput').value.trim();
   const pass = document.getElementById('ayipayPassInput').value;
@@ -926,9 +1517,15 @@ async function confirmPayWithAyiPay(){
   if(!email || !pass){ toast(LANG==='fr'?'Entrez votre email et mot de passe AyiPay':'Antre imel ak mo de pas AyiPay ou'); return; }
   const btn = document.getElementById('confirmPayBtn');
   const oldTxt = btn.textContent;
+  const minsLocked = await checkPayLockout(email);
+  if(minsLocked > 0){
+    toast(LANG==='fr'?`🔒 Trop de tentatives échouées. Réessayez dans ${minsLocked} min.`:`🔒 Twòp tantativ rate. Eseye ankò nan ${minsLocked} min.`);
+    return;
+  }
   btn.disabled = true; btn.textContent = LANG==='fr'?'Vérification...':'Verifikasyon...';
   try{
     const cred = await ayipayAuth.signInWithEmailAndPassword(email, pass);
+    await clearPayLockout(email);
     const uid = cred.user.uid;
     const price = a.price || 0;
     const walletRef = ayipayDb.collection('wallets').doc(uid);
@@ -948,6 +1545,8 @@ async function confirmPayWithAyiPay(){
       uid: uid, apkName: a.name, price: price, date: Date.now()
     });
     toast((LANG==='fr'?`Payé avec succès ! Nouveau solde AyiPay: ${newBalance.toLocaleString()} HTG`:`Peye ak siksè! Nouvo balans AyiPay: ${newBalance.toLocaleString()} HTG`));
+    logPurchase('AyiPay', a, email);
+    creditAyipayCollector(price); // background: depoze lajan an sou kont kolektè admin lan
     const u = getCurrentUser();
     if(u && pendingPayId && !(u.purchases||[]).includes(pendingPayId)){
       const newPurchases = (u.purchases||[]).concat([pendingPayId]);
@@ -965,6 +1564,7 @@ async function confirmPayWithAyiPay(){
       toast(LANG==='fr'?'Compte AyiPay non trouvé ou pas encore synchronisé':'Kont AyiPay pa jwenn oswa poko senkwonize');
     } else if(err.code && err.code.startsWith('auth/')){
       toast(LANG==='fr'?'Email ou mot de passe AyiPay incorrect':'Imel oswa mo de pas AyiPay pa kòrèk');
+      await recordPayFail(email);
     } else {
       toast((LANG==='fr'?'Erreur: ':'Erè: ')+(err.message||err));
     }
@@ -994,31 +1594,116 @@ function tryAdminLogin(){
   if(!val){ toast(t('wrongPass')); return; }
   auth.signInWithEmailAndPassword(ADMIN_EMAIL, val).then(function(){
     document.getElementById('adminPassInput').value='';
-    closeModal('adminLoginOverlay');
-    openAdminPanel();
+    document.getElementById('adminLoginOverlay').classList.remove('show');
+    document.getElementById('adminPanelView').classList.add('show');
+    const idx = navStack.length-1;
+    if(idx>=0 && navStack[idx].type==='modal' && navStack[idx].id==='adminLoginOverlay'){
+      navStack[idx] = {type:'admin'};
+      history.replaceState({wingNavLen: navStack.length}, '', location.href);
+    } else {
+      pushNavState({type:'admin'});
+    }
+    adminGoMenu();
     toast(t('welcomeAdmin'));
   }).catch(function(){ toast(t('wrongPass')); });
 }
-function openAdminPanel(){ document.getElementById('adminPanelView').classList.add('show'); adminGoMenu(); }
-function closeAdminPanel(){ document.getElementById('adminPanelView').classList.remove('show'); }
+function openAdminPanel(){ document.getElementById('adminPanelView').classList.add('show'); pushNavState({type:'admin'}); adminGoMenu(); }
+function closeAdminPanel(){
+  const el = document.getElementById('adminPanelView');
+  if(!el.classList.contains('show')) return;
+  el.classList.remove('show');
+  /* Si nou te nan yon seksyon (pa nan meni prensipal la), retire antre sa a tou */
+  let targetLen = navStack.length;
+  for(let i=navStack.length-1;i>=0;i--){
+    if(navStack[i].type==='admin'){ targetLen=i; break; }
+    if(navStack[i].type!=='adminSection') break;
+  }
+  closeNavTo(targetLen);
+}
+function adminSectionBack(){
+  const idx = navStack.length-1;
+  if(idx>=0 && navStack[idx].type==='adminSection'){ closeNavTo(idx); }
+  else { adminGoMenu(); }
+}
 function adminGoMenu(){
   document.getElementById('adminBackBtn').style.display='none';
   document.getElementById('adminTitle').textContent = t('adminMainTitle');
   document.getElementById('adminContent').innerHTML = `
     <div class="admin-menu-item" onclick="showAdminSection('manage')">${t('menuManage')} <span class="chev">›</span></div>
+    <div class="admin-menu-item" onclick="showAdminSection('purchases')">${LANG==='fr'?'💰 Achats':'💰 Acha yo'} <span class="chev">›</span></div>
+    <div class="admin-menu-item" onclick="showAdminSection('requests')">${LANG==='fr'?'✉️ Demandes APK':'✉️ Demand APK'} <span class="chev">›</span></div>
     <div class="admin-menu-item" onclick="showAdminSection('promo')">${t('menuPromo')} <span class="chev">›</span></div>
+    <div class="admin-menu-item" onclick="showAdminSection('ads')">${t('menuAds')} <span class="chev">›</span></div>
     <div class="admin-menu-item" onclick="showAdminSection('payments')">${t('menuPayments')} <span class="chev">›</span></div>
     <div class="admin-menu-item" onclick="showAdminSection('users')">${t('menuUsers')} <span class="chev">›</span></div>
     <div class="admin-menu-item" onclick="showAdminSection('stats')">${t('menuStats')} <span class="chev">›</span></div>
     <div class="admin-menu-item" onclick="showAdminSection('config')">${t('menuConfig')} <span class="chev">›</span></div>`;
 }
 
-function showAdminSection(section){
+function showAdminSection(section, pushNav){
+  if(pushNav===undefined) pushNav = true;
+  if(pushNav){
+    const idx = navStack.length-1;
+    if(idx>=0 && navStack[idx].type==='adminSection'){
+      /* Deja nan yon seksyon — ranplase l pou n pa kreye pwofondè istwa an plis */
+      navStack[idx] = {type:'adminSection', section};
+      history.replaceState({wingNavLen: navStack.length}, '', location.href);
+    } else {
+      pushNavState({type:'adminSection', section});
+    }
+  }
   document.getElementById('adminBackBtn').style.display='inline-block';
-  const titles = {manage:t('menuManage'),promo:t('menuPromo'),payments:t('menuPayments'),users:t('menuUsers'),stats:t('menuStats'),config:t('menuConfig')};
+  const titles = {manage:t('menuManage'),purchases:(LANG==='fr'?'💰 Achats':'💰 Acha yo'),requests:(LANG==='fr'?'✉️ Demandes APK':'✉️ Demand APK'),promo:t('menuPromo'),ads:t('menuAds'),payments:t('menuPayments'),users:t('menuUsers'),stats:t('menuStats'),config:t('menuConfig')};
   document.getElementById('adminTitle').textContent = titles[section] || t('adminMainTitle');
   const body = document.getElementById('adminContent');
-  if(section==='manage'){
+  if(section==='requests'){
+    body.innerHTML = `<div id="requestsList"><p class="empty-note">${LANG==='fr'?'Chargement...':'Ap chaje...'}</p></div>`;
+    db.collection('apk_requests').orderBy('date','desc').limit(100).get().then(function(snap){
+      const box = document.getElementById('requestsList');
+      if(!box) return;
+      if(snap.empty){ box.innerHTML = `<p class="empty-note">${LANG==='fr'?'Aucune demande.':'Pa gen demand.'}</p>`; return; }
+      box.innerHTML = snap.docs.map(function(d){
+        const r = d.data();
+        const dt = new Date(r.date);
+        const dstr = dt.toLocaleDateString(LANG==='fr'?'fr-FR':'fr-HT',{day:'2-digit',month:'2-digit',year:'numeric'});
+        const waNum = (r.contact||'').replace(/[^0-9]/g,'');
+        const waBtn = waNum ? `<button class="mini-btn" style="background:#25D366;color:#fff;" onclick="window.open('https://wa.me/${waNum}?text=${encodeURIComponent((LANG==='fr'?'Bonjour, au sujet de votre demande sur Wing: ':'Bonjou, konsènan demand ou fè sou Wing: ')+r.desc)}','_blank')">💬 WhatsApp</button>` : '';
+        return `<div class="apk-admin-row"><div class="meta">
+          <div class="n">${r.desc}</div>
+          <div class="d">${r.buyer||''} ${r.contact?'• '+r.contact:''} • ${dstr}</div>
+        </div>${waBtn}</div>`;
+      }).join('');
+    }).catch(function(err){
+      const box = document.getElementById('requestsList');
+      if(box) box.innerHTML = `<p class="empty-note">Firestore: ${err.message}</p>`;
+    });
+  } else if(section==='purchases'){
+    body.innerHTML = `<div id="purchasesTotals" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;"><p class="empty-note">${LANG==='fr'?'Chargement...':'Ap chaje...'}</p></div><div id="purchasesList"></div>`;
+    db.collection('purchases').orderBy('date','desc').limit(200).get().then(function(snap){
+      const rows = snap.docs.map(d=>d.data());
+      const totalsBox = document.getElementById('purchasesTotals');
+      const listBox = document.getElementById('purchasesList');
+      if(!listBox) return;
+      const totals = {};
+      rows.forEach(r=>{ totals[r.method] = (totals[r.method]||0) + (r.price||0); });
+      totalsBox.innerHTML = Object.keys(totals).length ? Object.keys(totals).map(m=>
+        `<div style="flex:1;min-width:120px;background:var(--blue-light);border-radius:12px;padding:12px;text-align:center;">
+          <div style="font-size:11px;font-weight:700;color:var(--blue-dark);">${m}</div>
+          <div style="font-size:18px;font-weight:800;color:var(--blue-dark);">${totals[m].toLocaleString()} HTG</div>
+        </div>`).join('') : `<p class="empty-note">${t('noApk')}</p>`;
+      listBox.innerHTML = rows.length ? rows.map(r=>{
+        const dt = new Date(r.date);
+        const dstr = dt.toLocaleDateString(LANG==='fr'?'fr-FR':'fr-HT',{day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + dt.toLocaleTimeString(LANG==='fr'?'fr-FR':'fr-HT',{hour:'2-digit',minute:'2-digit'});
+        return `<div class="apk-admin-row"><div class="meta">
+          <div class="n">${r.apkName} — ${(r.price||0).toLocaleString()} HTG</div>
+          <div class="d">${r.method} ${r.reference?'• '+r.reference:''} • ${r.buyer||''} • ${dstr}</div>
+        </div></div>`;
+      }).join('') : '';
+    }).catch(function(err){
+      const listBox = document.getElementById('purchasesList');
+      if(listBox) listBox.innerHTML = `<p class="empty-note">Firestore: ${err.message}</p>`;
+    });
+  } else if(section==='manage'){
     body.innerHTML = `<button class="btn btn-primary" onclick="openApkEdit(null)">${t('addApk')}</button>
       <div style="margin-top:12px;">${apks.map(a=>`
         <div class="apk-admin-row">
@@ -1031,14 +1716,47 @@ function showAdminSection(section){
     body.innerHTML = `<label>${t('promoBannerLbl')}</label><input id="promoInput" value="${settings.promoText}">
       <label>${t('announceTxtLbl')}</label><textarea id="announceInput">${settings.announceText}</textarea>
       <button class="btn btn-primary" onclick="savePromo()">${t('savePromo')}</button>`;
+  } else if(section==='ads'){
+    body.innerHTML = `<button class="btn btn-primary" onclick="openAdEdit(null)">${LANG==='fr'?'➕ Ajouter une Pub':'➕ Ajoute yon Pub'}</button>
+      <p class="small-note" style="margin-top:8px;">${LANG==='fr'?"Ces pubs apparaissent quand un utilisateur télécharge une APK gratuite.":'Pub sa yo parèt lè yon itilizatè ap telechaje yon APK gratis.'}</p>
+      <div style="margin-top:12px;">${(ads||[]).map(a=>`
+        <div class="apk-admin-row">
+          <div class="thumb">${a.imageUrl?`<img src="${a.imageUrl}">`:(a.category==='link'?'🔗':'🏪')}</div>
+          <div class="meta"><div class="n">${a.title||''}</div><div class="d">${a.category==='link'?(LANG==='fr'?'Lien':'Lyen'):(LANG==='fr'?'Business':'Biznis')} • ${a.shownCount||0}/${a.maxShows||'∞'} • ${a.active!==false?(LANG==='fr'?'Actif':'Aktif'):(LANG==='fr'?'Inactif':'Inaktif')}</div></div>
+          <button class="mini-btn" style="background:var(--blue-light);color:var(--blue-dark);" onclick="openAdEdit('${a.id}')">${t('edit')}</button>
+          <button class="mini-btn btn-danger" onclick="deleteAd('${a.id}')">${t('del')}</button>
+        </div>`).join('') || `<p class="empty-note">${LANG==='fr'?'Aucune pub pour le moment.':'Poko gen pub.'}</p>`}</div>`;
   } else if(section==='payments'){
+    const logoRow = (key,label) => `<label>${label} — Logo (imaj, otomatikman konprese)</label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        ${settings.pay[key+'Logo'] ? `<img src="${settings.pay[key+'Logo']}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;">` : ''}
+        <input type="file" accept="image/*" id="logo_${key}" style="flex:1;">
+      </div>
+      <label>${label} — Lyen (sit web oswa APK, opsyonèl)</label>
+      <input type="text" id="link_${key}" placeholder="https://..." value="${settings.pay[key+'Link']||''}">`;
     body.innerHTML = `<p class="small-note" style="margin-bottom:10px;">${t('payIntro')}</p>
       <label>${t('payMoncash')}</label><input id="pay_moncash" value="${settings.pay.moncash}">
+      ${logoRow('moncash','MonCash')}
       <label>${t('payNatcash')}</label><input id="pay_natcash" value="${settings.pay.natcash}">
+      ${logoRow('natcash','NatCash')}
       <label>${t('payAyipay')}</label><input id="pay_ayipay" value="${settings.pay.ayipay}">
+      ${logoRow('ayipay','AyiPay')}
       <label>${t('payPaypal')}</label><input id="pay_paypal" value="${settings.pay.paypal}">
+      ${logoRow('paypal','PayPal')}
       <button class="btn btn-primary" onclick="savePayments()">${t('savePayments')}</button>
-      <p class="small-note">${t('ayipayNote')}</p>`;
+      <p class="small-note">${t('ayipayNote')}</p>
+      <hr style="margin:20px 0;border:none;border-top:1px solid #e0e4ea;">
+      <h4 style="margin-bottom:10px;">🔒 Bloke Peman yo</h4>
+      <p class="small-note" style="margin-bottom:10px;">Lè sa aktive, pèsonn pa ka achte okenn APK peye (tout mwayen peman bloke).</p>
+      <button class="btn ${settings.paymentsLocked?'btn-danger':'btn-o'}" onclick="togglePaymentsLock()">${settings.paymentsLocked ? '🔒 '+(LANG==='fr'?'Paiements bloqués — Débloquer':'Peman bloke — Debloke') : '🔓 '+(LANG==='fr'?'Paiements actifs — Bloquer':'Peman aktif — Bloke')}</button>
+      <hr style="margin:20px 0;border:none;border-top:1px solid #e0e4ea;">
+      <h4 style="margin-bottom:10px;">💰 Kont Kolektè AyiPay</h4>
+      <p class="small-note" style="margin-bottom:10px;">Lè yon moun peye ak AyiPay, lajan an ap depoze sou kont AyiPay ou mete la a.</p>
+      <label>Imel Kont AyiPay Ou</label>
+      <input type="email" id="ayipay-collector-email" value="${settings.ayipayCollector?settings.ayipayCollector.email||'':''}" placeholder="imel@egzanp.com">
+      <label>Mo De Pas Kont AyiPay Ou</label>
+      <input type="password" id="ayipay-collector-pass" value="${settings.ayipayCollector?settings.ayipayCollector.pass||'':''}" placeholder="••••••••">
+      <button class="btn btn-primary" style="margin-top:8px;" onclick="saveAyipayCollector()">${LANG==='fr'?'Enregistrer le compte collecteur':'Anrejistre Kont Kolektè a'}</button>`;
   } else if(section==='users'){
     body.innerHTML = `<p class="small-note" style="margin-bottom:10px;">${t('usersIntro')}</p><div id="usersListBox"><p class="empty-note">${LANG==='fr'?'Chargement...':'Ap chaje...'}</p></div>`;
     db.collection('users').get().then(function(snap){
@@ -1089,14 +1807,51 @@ function savePromo(){
 }
 function savePayments(){
   if(!requireAuthOrPrompt()) return;
-  const pay = {
+  const keys = ['moncash','natcash','ayipay','paypal'];
+  const pay = Object.assign({}, settings.pay, {
     moncash: document.getElementById('pay_moncash').value.trim(),
     natcash: document.getElementById('pay_natcash').value.trim(),
     ayipay: document.getElementById('pay_ayipay').value.trim(),
     paypal: document.getElementById('pay_paypal').value.trim()
-  };
-  db.collection('settings').doc('global').set({pay}, {merge:true})
-    .then(function(){ toast(t('paySaved')); })
+  });
+  keys.forEach(function(key){
+    const linkInput = document.getElementById('link_'+key);
+    if(linkInput) pay[key+'Link'] = linkInput.value.trim();
+  });
+  let pending = 0, done = 0;
+  function finalize(){
+    db.collection('settings').doc('global').set({pay}, {merge:true})
+      .then(function(){ toast(t('paySaved')); })
+      .catch(function(err){ toast('Firestore: '+err.message); });
+  }
+  keys.forEach(function(key){
+    const fileInput = document.getElementById('logo_'+key);
+    const file = fileInput && fileInput.files[0];
+    if(file){
+      pending++;
+      // Ti gwosè (64px) ak kalite ba pou limite espas Firestore
+      resizeImageToDataURL(file, 64, 0.5, function(dataUrl){
+        pay[key+'Logo'] = dataUrl;
+        done++;
+        if(done===pending) finalize();
+      });
+    }
+  });
+  if(pending===0) finalize();
+}
+function togglePaymentsLock(){
+  if(!requireAuthOrPrompt()) return;
+  const newVal = !settings.paymentsLocked;
+  db.collection('settings').doc('global').set({paymentsLocked:newVal}, {merge:true})
+    .then(function(){ toast(newVal ? (LANG==='fr'?'🔒 Paiements bloqués':'🔒 Peman bloke') : (LANG==='fr'?'🔓 Paiements débloqués':'🔓 Peman debloke')); })
+    .catch(function(err){ toast('Firestore: '+err.message); });
+}
+function saveAyipayCollector(){
+  if(!requireAuthOrPrompt()) return;
+  const email = document.getElementById('ayipay-collector-email').value.trim();
+  const pass = document.getElementById('ayipay-collector-pass').value;
+  db.collection('settings').doc('global').set({ayipayCollector:{email,pass}}, {merge:true})
+    .then(function(){ toast(LANG==='fr'?'Compte collecteur enregistré':'Kont kolektè anrejistre'); })
     .catch(function(err){ toast('Firestore: '+err.message); });
 }
 function changeAdminPass(){
@@ -1131,7 +1886,35 @@ function openApkEdit(id){
   document.getElementById('f_version').value = a? (a.version||''):'';
   document.getElementById('f_pkg').value = a? (a.pkg||''):'';
   window._editIcon = a? a.icon:'';
+  window._editScreenshots = a && a.screenshots ? a.screenshots.slice(0,3) : [];
+  document.getElementById('f_screenshots').value = '';
+  renderScreenshotPreviews();
   openModal('apkEditOverlay');
+}
+function renderScreenshotPreviews(){
+  const row = document.getElementById('ssPreviewRow');
+  const list = window._editScreenshots || [];
+  row.innerHTML = list.map((s,i)=>`<div class="ss-thumb-wrap"><img src="${s}"><button type="button" class="ss-remove" onclick="removeScreenshotPreview(${i})">✕</button></div>`).join('');
+}
+function removeScreenshotPreview(i){
+  window._editScreenshots.splice(i,1);
+  renderScreenshotPreviews();
+}
+function handleScreenshotFiles(fileList){
+  const files = Array.from(fileList||[]);
+  if(!files.length) return;
+  window._editScreenshots = window._editScreenshots || [];
+  const spaceLeft = 3 - window._editScreenshots.length;
+  if(spaceLeft<=0){ toast(LANG==='fr'?'Maximum 3 captures d\'écran':'Maksimòm 3 foto egzanp'); document.getElementById('f_screenshots').value=''; return; }
+  const toProcess = files.slice(0, spaceLeft);
+  let remaining = toProcess.length;
+  toProcess.forEach(file=>{
+    resizeImageToDataURL(file, 720, 0.6, function(dataUrl){
+      window._editScreenshots.push(dataUrl);
+      remaining--;
+      if(remaining===0){ renderScreenshotPreviews(); document.getElementById('f_screenshots').value=''; }
+    });
+  });
 }
 function saveApk(){
   if(!requireAuthOrPrompt()) return;
@@ -1150,14 +1933,17 @@ function saveApk(){
   const pkg = document.getElementById('f_pkg').value.trim();
   function finish(iconData){
     const existing = apks.find(x=>x.id===id);
+    const versionChanged = existing && version && existing.version && existing.version !== version;
     const entry = {name, cat, desc, rating, price, size, version, pkg,
       icon: iconData!==undefined ? iconData : (window._editIcon||''),
+      screenshots: (window._editScreenshots||[]).slice(0,3),
       apkData: apkLink,
-      downloads: existing ? (existing.downloads||0) : 0};
+      downloads: existing ? (existing.downloads||0) : 0,
+      lastUpdate: versionChanged ? Date.now() : (existing ? (existing.lastUpdate||0) : 0)};
     db.collection('apks').doc(id).set(entry)
       .then(function(){
         closeModal('apkEditOverlay');
-        showAdminSection('manage');
+        showAdminSection('manage', false);
         toast(t('apkSaved'));
       })
       .catch(function(err){ toast('Firestore: '+err.message); });
@@ -1169,14 +1955,61 @@ function deleteApk(id){
   if(!requireAuthOrPrompt()) return;
   if(!confirm(t('confirmDelete'))) return;
   db.collection('apks').doc(id).delete()
-    .then(function(){ showAdminSection('manage'); toast(t('apkDeleted')); })
+    .then(function(){ showAdminSection('manage', false); toast(t('apkDeleted')); })
     .catch(function(err){ toast('Firestore: '+err.message); });
 }
+
+/* ================= SEKIRITE (deteran, PA yon garanti absoli) ================= */
+document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+document.addEventListener('keydown', function(e){
+  const k = e.key;
+  const blockedCombo = (e.ctrlKey || e.metaKey) && ['u','s','i','j','c'].includes((k||'').toLowerCase());
+  if(k==='F12' || blockedCombo){
+    e.preventDefault();
+    toast(LANG==='fr'?'🔒 Action désactivée pour la sécurité':'🔒 Aksyon sa a dezaktive pou sekirite');
+  }
+});
+(function(){
+  let warned = false;
+  function checkDevtools(){
+    const threshold = 160;
+    const isOpen = (window.outerWidth - window.innerWidth > threshold) || (window.outerHeight - window.innerHeight > threshold);
+    const overlay = document.getElementById('securityLockOverlay');
+    if(isOpen){
+      if(!overlay){
+        const div = document.createElement('div');
+        div.id = 'securityLockOverlay';
+        div.style.cssText = 'position:fixed;inset:0;background:#0d2b52;color:#fff;z-index:99999;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-weight:700;font-size:16px;';
+        div.textContent = LANG==='fr' ? '🔒 Fermez les outils de développement pour continuer à utiliser Wing.' : '🔒 Fèmen zouti devlopè yo pou w ka kontinye itilize Wing.';
+        document.body.appendChild(div);
+      }
+    } else if(overlay){
+      overlay.remove();
+    }
+  }
+  setInterval(checkDevtools, 1000);
+})();
 
 /* ================= INIT ================= */
 applyLang();
 renderAll();
 updateHeaderProfileIcon();
+updateCartBadge();
+autoDetectDesktopMode();
+
+/* ================= MODE LOCAL (Service Worker) =================
+   Anrejistre yon Service Worker ki kenbe yon kopi (cache) de paj la ak
+   fichye Firebase yo sou aparèy la. Konsa, si rezo a tonbe pandan yon
+   moun ap sèvi ak app la, li p ap wè yon paj erè sèvè (500) — l ap
+   kontinye chaje app la ak dènye vèsyon ki te anrejistre lokalman an,
+   epi tout ap rekonekte otomatikman ak entènèt lè rezo a retounen. */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(err){
+      console.warn('Service Worker pa t ka anrejistre:', err);
+    });
+  });
+}
 </script>
 </body>
 </html>
